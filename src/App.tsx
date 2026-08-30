@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Student, Role, Assignment, AppData } from './types';
 import { calculateStatistics, generateAssignments } from './engine/matcher';
 import { Navbar, ActiveTab } from './components/Navbar';
-import { StatsSummary } from './components/StatsSummary';
+import { StatsSidebar } from './components/StatsSidebar';
 import { AssignmentBoard } from './components/AssignmentBoard';
 import { StudentManager } from './components/StudentManager';
 import { RoleManager } from './components/RoleManager';
 import { PrintPoster } from './components/PrintPoster';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+import { Sparkles, RotateCcw } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 const STORAGE_KEY = 'classroom_role_assigner_data_v1';
 
@@ -32,6 +34,7 @@ const DEFAULT_ROLES_TEMPLATE: Role[] = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('board');
+  const [classTitle, setClassTitle] = useState<string>('My Class');
   const [roles, setRoles] = useState<Role[]>(EMPTY_ROLES);
   const [students, setStudents] = useState<Student[]>(EMPTY_STUDENTS);
   const [assignments, setAssignments] = useState<Assignment[]>(EMPTY_ASSIGNMENTS);
@@ -68,16 +71,24 @@ export default function App() {
         const decompressed = decompressFromEncodedURIComponent(compressed);
         if (decompressed) {
           const parsed = JSON.parse(decompressed) as AppData;
+          if (parsed.classTitle) setClassTitle(parsed.classTitle);
           if (parsed.roles) setRoles(parsed.roles);
           if (parsed.students) setStudents(parsed.students);
           if (parsed.assignments) setAssignments(parsed.assignments);
-          lastSavedStateRef.current = JSON.stringify({
+          // Persist to localStorage so it survives the reload
+          const serialized = JSON.stringify({
+            classTitle: parsed.classTitle,
             roles: parsed.roles,
             students: parsed.students,
             assignments: parsed.assignments,
           });
+          lastSavedStateRef.current = serialized;
+          localStorage.setItem(STORAGE_KEY, serialized);
           setLastSavedAt(new Date());
           setHasLoaded(true);
+          // Clear the hash from URL and reload on next tick to let state apply
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          setTimeout(() => window.location.reload(), 0);
           return;
         }
       }
@@ -86,6 +97,7 @@ export default function App() {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached) as AppData;
+        if (parsed.classTitle) setClassTitle(parsed.classTitle);
         if (parsed.roles) setRoles(parsed.roles);
         if (parsed.students) setStudents(parsed.students);
         if (parsed.assignments) {
@@ -102,6 +114,7 @@ export default function App() {
 
       // First visit - start with clean slate
       lastSavedStateRef.current = JSON.stringify({
+        classTitle: 'My Class',
         roles: EMPTY_ROLES,
         students: EMPTY_STUDENTS,
         assignments: EMPTY_ASSIGNMENTS,
@@ -111,6 +124,7 @@ export default function App() {
       console.error('Failed to load data:', e);
       // Fallback to clean slate
       lastSavedStateRef.current = JSON.stringify({
+        classTitle: 'My Class',
         roles: EMPTY_ROLES,
         students: EMPTY_STUDENTS,
         assignments: EMPTY_ASSIGNMENTS,
@@ -129,6 +143,7 @@ export default function App() {
       try {
         setIsSaving(true);
         const serialized = JSON.stringify({
+          classTitle,
           roles,
           students,
           assignments,
@@ -152,14 +167,14 @@ export default function App() {
         setIsSaving(false);
       }
     },
-    [roles, students, assignments]
+    [classTitle, roles, students, assignments]
   );
 
   // Auto-save debounced only when data has genuinely changed
   useEffect(() => {
     if (!hasLoaded) return;
 
-    const currentSerialized = JSON.stringify({ roles, students, assignments });
+    const currentSerialized = JSON.stringify({ classTitle, roles, students, assignments });
 
     // Skip if state has not loaded yet or hasn't changed
     if (!lastSavedStateRef.current || currentSerialized === lastSavedStateRef.current) {
@@ -171,7 +186,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [roles, students, assignments, saveToDisk, hasLoaded]);
+  }, [classTitle, roles, students, assignments, saveToDisk, hasLoaded]);
 
   // Handle Updates
   const handleUpdateRoles = (newRoles: Role[]) => {
@@ -210,12 +225,13 @@ export default function App() {
 
   // Export data as JSON file
   const handleExportJson = () => {
-    const data: AppData = { roles, students, assignments };
+    const data: AppData = { classTitle, roles, students, assignments };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `grade4-classroom-jobs-${new Date().toISOString().split('T')[0]}.json`;
+    const safeTitle = classTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    a.download = `${safeTitle || 'classroom'}-jobs-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setSaveMessage('Exported class file!');
@@ -230,6 +246,7 @@ export default function App() {
         const text = e.target?.result as string;
         const parsed = JSON.parse(text) as AppData;
 
+        if (parsed.classTitle) setClassTitle(parsed.classTitle);
         if (parsed.roles) setRoles(parsed.roles);
         if (parsed.students) setStudents(parsed.students);
         if (parsed.assignments) {
@@ -249,7 +266,7 @@ export default function App() {
 
   // Generate shareable URL
   const handleCopyShareLink = () => {
-    const data: AppData = { roles, students, assignments };
+    const data: AppData = { classTitle, roles, students, assignments };
     const compressed = compressToEncodedURIComponent(JSON.stringify(data));
     const shareUrl = `${window.location.origin}${window.location.pathname}#data=${compressed}`;
 
@@ -262,7 +279,39 @@ export default function App() {
     });
   };
 
+  // Clear all data (reset to empty state)
+  const handleClearAllData = () => {
+    setClassTitle('My Class');
+    setRoles(EMPTY_ROLES);
+    setStudents(EMPTY_STUDENTS);
+    setAssignments(EMPTY_ASSIGNMENTS);
+    localStorage.removeItem(STORAGE_KEY);
+    lastSavedStateRef.current = JSON.stringify({
+      classTitle: 'My Class',
+      roles: EMPTY_ROLES,
+      students: EMPTY_STUDENTS,
+      assignments: EMPTY_ASSIGNMENTS,
+    });
+    setLastSavedAt(null);
+    setSaveMessage('All data cleared!');
+    setTimeout(() => setSaveMessage(null), 2500);
+  };
+
   const stats = calculateStatistics(students, roles, assignments);
+
+  // Wrap onGenerateMatches with confetti
+  const handleGenerateWithConfetti = () => {
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+    } catch {
+      // ignore
+    }
+    handleGenerateMatches();
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
@@ -275,11 +324,11 @@ export default function App() {
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onCopyShareLink={handleCopyShareLink}
-        onGenerateMatches={handleGenerateMatches}
-        onClearAssignments={handleClearAssignments}
         onLoadDefaultRoles={handleLoadDefaultRoles}
+        onClearAllData={handleClearAllData}
+        onUpdateClassTitle={setClassTitle}
+        classTitle={classTitle}
         hasRoles={roles.length > 0}
-        hasStudents={students.length > 0}
       />
 
       {/* Floating Save Toast */}
@@ -291,19 +340,60 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
-        {/* Render Stats Banner on Board tab */}
-        {activeTab === 'board' && <StatsSummary stats={stats} />}
-
+      <main className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
         {activeTab === 'board' && (
-          <AssignmentBoard
-            students={students}
-            roles={roles}
-            assignments={assignments}
-            onUpdateAssignments={handleUpdateAssignments}
-            onGenerateMatches={handleGenerateMatches}
-            onClearAssignments={handleClearAssignments}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar: Stats (1 col) */}
+            <div className="lg:col-span-1">
+              <StatsSidebar stats={stats} />
+            </div>
+
+            {/* Right Side: Board + Actions (3 cols) */}
+            <div className="lg:col-span-3">
+              {/* Board Header with Actions - Full Width Gradient Bar */}
+              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🎯</span>
+                    <h2 className="text-base sm:text-lg font-bold">Classroom Job Matching Board</h2>
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal hidden md:inline">
+                      Drag students to swap, move, or unassign
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleClearAssignments}
+                    disabled={assignments.length === 0}
+                    className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-2 rounded-xl border border-white/20 transition-all text-xs disabled:opacity-40"
+                    title="Clear all student assignments"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Clear
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleGenerateWithConfetti}
+                    disabled={roles.length === 0 || students.length === 0}
+                    className="flex items-center gap-1.5 bg-white hover:bg-blue-50 text-blue-700 font-extrabold px-4 py-2 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                    ✨ Generate Optimal Matches
+                  </button>
+                </div>
+              </div>
+
+              <AssignmentBoard
+                students={students}
+                roles={roles}
+                assignments={assignments}
+                onUpdateAssignments={handleUpdateAssignments}
+              />
+            </div>
+          </div>
         )}
 
         {activeTab === 'students' && (
@@ -327,6 +417,7 @@ export default function App() {
             students={students}
             roles={roles}
             assignments={assignments}
+            classTitle={classTitle}
           />
         )}
       </main>

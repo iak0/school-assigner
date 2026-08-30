@@ -9,7 +9,7 @@ export const DEFAULT_CONFIG: MatchConfig = {
     5: 10,
     unranked: 0,
   },
-  letterScoreWeights: {
+  adjustmentScoreWeights: {
     3: 45,
     2: 25,
     1: 10,
@@ -149,8 +149,8 @@ export function calculateStudentUtility(
   else if (rank === 5) baseScore = config.rankScores[5];
   else baseScore = config.rankScores.unranked;
 
-  const letterBonus = config.letterScoreWeights[student.applicationScore] ?? 0;
-  const utility = Math.max(0, baseScore + letterBonus);
+  const adjustmentBonus = config.adjustmentScoreWeights[student.applicationScore] ?? 0;
+  const utility = Math.max(0, baseScore + adjustmentBonus);
 
   return { rank, utility };
 }
@@ -299,6 +299,35 @@ export function generateAssignments(
 }
 
 /**
+ * Calculates the theoretical optimal utility score assuming the same student rankings
+ * and adjustment scores, but WITHOUT considering locked assignments or manual moves.
+ * This represents the best possible outcome the algorithm could achieve.
+ */
+function calculateTheoreticalOptimum(
+  students: Student[],
+  roles: Role[],
+  config: MatchConfig = DEFAULT_CONFIG
+): number {
+  // Run the matching algorithm without any locked assignments
+  const unlockedAssignments = students.map((s) => ({ studentId: s.id, roleId: null, isLocked: false }));
+  const optimalAssignments = generateAssignments(students, roles, unlockedAssignments, config);
+
+  // Calculate utility score of this optimal assignment
+  const studentMap = new Map<string, Student>(students.map((s) => [s.id, s]));
+  let totalUtility = 0;
+
+  for (const assign of optimalAssignments) {
+    if (!assign.roleId) continue;
+    const student = studentMap.get(assign.studentId);
+    if (!student) continue;
+    const { utility } = calculateStudentUtility(student, assign.roleId, config);
+    totalUtility += utility;
+  }
+
+  return totalUtility;
+}
+
+/**
  * Calculates comprehensive match statistics and satisfaction metrics.
  */
 export function calculateStatistics(
@@ -366,16 +395,14 @@ export function calculateStatistics(
   const unassignedCount = students.length - assignedCount;
   const averageRank = rankedCount > 0 ? Number((totalRankSum / rankedCount).toFixed(2)) : null;
 
-  const topTwoCount = choiceDistribution.firstChoice + choiceDistribution.secondChoice;
-  const topThreeCount = topTwoCount + choiceDistribution.thirdChoice;
+  // Max theoretical utility: each assigned slot filled with a 1st choice (no letter bonus)
+  // This measures pure preference satisfaction independent of adjustment quality
+  const maxPossibleUtilityScore = assignedCount * config.rankScores[1]; // 100 points per student
 
-  const topTwoPercent = assignedCount > 0 ? Math.round((topTwoCount / assignedCount) * 100) : 0;
-  const topThreePercent = assignedCount > 0 ? Math.round((topThreeCount / assignedCount) * 100) : 0;
-
-  // Max theoretical utility: each assigned slot filled with a 1st choice + max possible letter bonus (+45)
-  const maxPossibleUtilityScore = assignedCount * (config.rankScores[1] + (config.letterScoreWeights[3] || 45));
-  const satisfactionPercentage =
-    maxPossibleUtilityScore > 0 ? Math.min(100, Math.round((rawUtilityScore / maxPossibleUtilityScore) * 100)) : 0;
+  // Theoretical optimal score: best possible outcome without locks/manual overrides
+  const theoreticalOptimalScore = calculateTheoreticalOptimum(students, roles, config);
+  const optimalityPercentage =
+    theoreticalOptimalScore > 0 ? Math.min(100, Math.round((rawUtilityScore / theoreticalOptimalScore) * 100)) : 0;
 
   return {
     totalStudents: students.length,
@@ -384,11 +411,9 @@ export function calculateStatistics(
     unassignedCount,
     choiceDistribution,
     averageRank,
-    topTwoPercent,
-    topThreePercent,
     rawUtilityScore,
     maxPossibleUtilityScore,
-    satisfactionPercentage,
+    optimalityPercentage,
   };
 }
 
@@ -416,7 +441,7 @@ export function getDetailedAssignments(
         studentName: 'Unknown Student',
         roleName: role ? role.name : null,
         assignedRank: null,
-        letterScore: 0,
+        adjustmentScore: 0,
         utilityContribution: 0,
       };
     }
@@ -430,7 +455,7 @@ export function getDetailedAssignments(
       studentName: student.name,
       roleName: role ? role.name : null,
       assignedRank: rank,
-      letterScore: student.applicationScore,
+      adjustmentScore: student.applicationScore,
       utilityContribution: utility,
     };
   });

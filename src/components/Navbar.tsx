@@ -1,7 +1,89 @@
 import React from 'react';
-import { Users, Briefcase, Target, Printer, HardDrive, Download, Upload, Link, Sparkles, RotateCcw, PlusCircle } from 'lucide-react';
+import { Users, Briefcase, Target, Printer, Download, Upload, Link, PlusCircle, Settings, HardDrive, Trash2, AlertTriangle, Edit2, Check } from 'lucide-react';
 
 export type ActiveTab = 'board' | 'students' | 'roles' | 'print';
+
+// Inline editable class title component
+const EditableClassTitle: React.FC<{ classTitle: string; onUpdate: (title: string) => void }> = ({
+  classTitle,
+  onUpdate,
+}) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState(classTitle);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  // Sync editValue when classTitle changes externally (e.g. on load from localStorage)
+  React.useEffect(() => {
+    if (!isEditing) {
+      setEditValue(classTitle);
+    }
+  }, [classTitle, isEditing]);
+
+  const handleSave = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== classTitle) {
+      onUpdate(trimmed);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setEditValue(classTitle);
+      setIsEditing(false);
+    }
+  };
+
+  const handleBlur = () => {
+    // Small delay to allow click on save button to register
+    setTimeout(handleSave, 100);
+  };
+
+  if (isEditing) {
+    return (
+      <span className="flex items-center gap-1">
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          className="bg-white text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-400 w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          maxLength={30}
+        />
+        <button
+          type="button"
+          onClick={handleSave}
+          className="p-0.5 text-blue-600 hover:text-blue-800"
+          title="Save"
+        >
+          <Check className="w-3.5 h-3.5" />
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 cursor-pointer hover:bg-blue-200 transition-colors flex items-center gap-1"
+      onClick={() => setIsEditing(true)}
+      title="Click to edit class name"
+    >
+      {classTitle || 'My Class'}
+      <Edit2 className="w-3 h-3 opacity-60 hover:opacity-100" />
+    </span>
+  );
+};
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -12,11 +94,11 @@ interface NavbarProps {
   onExportJson: () => void;
   onImportJson: (file: File) => void;
   onCopyShareLink: () => void;
-  onGenerateMatches: () => void;
-  onClearAssignments: () => void;
   onLoadDefaultRoles: () => void;
+  onClearAllData: () => void;
+  onUpdateClassTitle: (title: string) => void;
+  classTitle: string;
   hasRoles: boolean;
-  hasStudents: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,13 +110,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   onExportJson,
   onImportJson,
   onCopyShareLink,
-  onGenerateMatches,
-  onClearAssignments,
   onLoadDefaultRoles,
+  onClearAllData,
+  onUpdateClassTitle,
+  classTitle,
   hasRoles,
-  hasStudents,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    if (settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsOpen]);
 
   const triggerFileImport = () => {
     fileInputRef.current?.click();
@@ -44,8 +141,20 @@ export const Navbar: React.FC<NavbarProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       onImportJson(file);
-      // Reset the input so the same file can be selected again
       e.target.value = '';
+    }
+    setSettingsOpen(false);
+  };
+
+  const handleDropdownAction = (action: () => void) => {
+    action();
+    setSettingsOpen(false);
+  };
+
+  const handleClearAllData = () => {
+    if (window.confirm('⚠️ This will permanently delete ALL class data (roles, students, assignments) from this browser.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?')) {
+      onClearAllData();
+      setSettingsOpen(false);
     }
   };
 
@@ -63,12 +172,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <h1 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
                   Classroom Role Assigner
                 </h1>
-                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">
-                  Grade 4
-                </span>
+                <EditableClassTitle
+                  classTitle={classTitle}
+                  onUpdate={onUpdateClassTitle}
+                />
               </div>
               <p className="text-[11px] text-slate-500 hidden sm:block">
-                Preference-maximizing matching with letter score adjustments
+                Preference-maximizing matching with teacher adjustments
               </p>
             </div>
           </div>
@@ -128,22 +238,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Action Buttons & Save Status */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Generate Matches Button (only on Board tab) */}
-            {activeTab === 'board' && hasRoles && hasStudents && (
-              <button
-                type="button"
-                onClick={onGenerateMatches}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-all text-xs disabled:opacity-50"
-                title="Generate optimal matches using preference-maximizing algorithm"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Generate Matches</span>
-              </button>
-            )}
-
+          {/* Right side: Contextual button + Settings dropdown */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Load Default Roles Button (on Roles tab when empty) */}
             {activeTab === 'roles' && !hasRoles && (
               <button
@@ -157,90 +253,108 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Clear Assignments Button (on Board tab when there are assignments) */}
-            {activeTab === 'board' && hasStudents && (
+            {/* Settings Dropdown */}
+            <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
-                onClick={onClearAssignments}
-                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                title="Clear all assignments (students go to standby)"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                <span>Clear Assignments</span>
-              </button>
-            )}
-
-            {/* Export/Import/Share Group */}
-            <div className="flex items-center gap-1.5">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".json"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="import-file-input"
-              />
-
-              <button
-                type="button"
-                onClick={onExportJson}
+                onClick={() => setSettingsOpen(!settingsOpen)}
                 disabled={isSaving}
                 className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-                title="Export class data as JSON file"
+                title="Settings & Data"
+                aria-expanded={settingsOpen}
+                aria-haspopup="true"
               >
-                <Download className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Export</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={triggerFileImport}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-                title="Import class data from JSON file"
-              >
-                <Upload className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Import</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onCopyShareLink}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-                title="Copy shareable sync link to clipboard"
-              >
-                <Link className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Share Link</span>
-              </button>
-            </div>
-
-            {/* Disk Save Status & Trigger */}
-            <div className="flex items-center gap-2">
-              {lastSavedAt && (
-                <span className="text-[11px] text-slate-400 hidden sm:inline">
-                  Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                <Settings className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">Settings</span>
+                <span className="inline-block transition-transform" style={{ transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
                 </span>
-              )}
-              <button
-                type="button"
-                onClick={onSaveToDisk}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-                title="Save current state to localStorage (auto-saves on every change)"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <HardDrive className="w-3.5 h-3.5 text-slate-500" />
-                    <span className="hidden sm:inline">Saved</span>
-                  </>
-                )}
               </button>
+
+              {settingsOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50 animate-fade-in">
+                  <div className="px-3 py-2 border-b border-slate-100">
+                    <p className="text-xs font-semibold text-slate-900">Data & Sync</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Auto-saves to browser on every change</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDropdownAction(onExportJson)}
+                    disabled={isSaving}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <span>Export Class File (.json)</span>
+                  </button>
+
+                  <div className="relative">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".json"
+                      onChange={handleFileSelect}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={triggerFileImport}
+                      disabled={isSaving}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    >
+                      <Upload className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      <span>Import Class File (.json)</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDropdownAction(onCopyShareLink)}
+                    disabled={isSaving}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                  >
+                    <Link className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    <span>Copy Share / Sync Link</span>
+                  </button>
+
+                  <div className="border-t border-slate-100 my-1"></div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDropdownAction(onSaveToDisk)}
+                    disabled={isSaving}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    ) : (
+                      <HardDrive className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    )}
+                    <span>{isSaving ? 'Saving...' : 'Save Now'}</span>
+                  </button>
+
+                  <div className="border-t border-slate-100 my-1"></div>
+
+                  <button
+                    type="button"
+                    onClick={handleClearAllData}
+                    disabled={isSaving}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <Trash2 className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>Clear All Data (Reset)</span>
+                  </button>
+
+                  {lastSavedAt && (
+                    <div className="px-3 py-1.5 border-t border-slate-100">
+                      <p className="text-[11px] text-slate-400 text-center">
+                        Last saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

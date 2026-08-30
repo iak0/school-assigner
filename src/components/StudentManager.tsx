@@ -140,7 +140,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
             <h2 className="text-xl font-bold text-slate-800">Students, Preferences & Application Ratings</h2>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Manage your class roster ({students.length} students), rank their top 5 job choices, and rate their application letters (-3 to +3).
+            Manage your class roster ({students.length} students), rank their top 5 job choices, and set teacher adjustments (-3 to +3).
           </p>
         </div>
 
@@ -253,7 +253,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Application Letter Rating (-3 to +3)
+                  Teacher Adjustment (-3 to +3)
                 </label>
                 <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-300">
                   {[-3, -2, -1, 0, 1, 2, 3].map((val) => (
@@ -276,9 +276,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                   ))}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
-                  <span>-3 (Poor/Missing)</span>
+                  <span>-3 (Missing)</span>
                   <span>0 (Neutral)</span>
-                  <span>+3 (Outstanding Bonus)</span>
+                  <span>+3 (Outstanding)</span>
                 </div>
               </div>
             </div>
@@ -427,8 +427,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-3.5 px-4">Student Name</th>
-                <th className="py-3.5 px-4 text-center">Letter Rating</th>
                 <th className="py-3.5 px-4">Top 5 Preferences</th>
+                <th className="py-3.5 px-4 text-center">Adjustment</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -448,31 +448,6 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                       {student.notes && (
                         <div className="text-[11px] text-slate-400 mt-0.5">{student.notes}</div>
                       )}
-                    </td>
-
-                    {/* Letter Rating */}
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="inline-flex items-center gap-1">
-                        <select
-                          value={student.applicationScore}
-                          onChange={(e) => handleQuickScoreChange(student.id, parseInt(e.target.value))}
-                          className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                            student.applicationScore > 0
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : student.applicationScore < 0
-                              ? 'bg-rose-50 text-rose-800 border-rose-300'
-                              : 'bg-slate-50 text-slate-700 border-slate-300'
-                          }`}
-                        >
-                          <option value={3}>🌟 +3 (Outstanding)</option>
-                          <option value={2}>✨ +2 (Great)</option>
-                          <option value={1}>👍 +1 (Good)</option>
-                          <option value={0}>0 (Neutral)</option>
-                          <option value={-1}>⚠️ -1 (Fair)</option>
-                          <option value={-2}>❌ -2 (Weak)</option>
-                          <option value={-3}>⛔ -3 (Missing)</option>
-                        </select>
-                      </div>
                     </td>
 
                     {/* Preferences Pills */}
@@ -503,6 +478,31 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                             </span>
                           );
                         })}
+                      </div>
+                    </td>
+
+                    {/* Adjustment */}
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="inline-flex items-center gap-1">
+                        <select
+                          value={student.applicationScore}
+                          onChange={(e) => handleQuickScoreChange(student.id, parseInt(e.target.value))}
+                          className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            student.applicationScore > 0
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : student.applicationScore < 0
+                              ? 'bg-rose-50 text-rose-800 border-rose-300'
+                              : 'bg-slate-50 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          <option value={3}>+3</option>
+                          <option value={2}>+2</option>
+                          <option value={1}>+1</option>
+                          <option value={0}>0</option>
+                          <option value={-1}>-1</option>
+                          <option value={-2}>-2</option>
+                          <option value={-3}>-3</option>
+                        </select>
                       </div>
                     </td>
 

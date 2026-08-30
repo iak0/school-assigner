@@ -12,7 +12,7 @@ export interface Student {
   name: string;
   // Ordered array of role IDs (up to 5 choices: 1st, 2nd, 3rd, 4th, 5th)
   preferences: string[];
-  // Teacher score rating for application letter: -3 to +3
+  // Teacher adjustment score: -3 to +3
   applicationScore: number;
   notes?: string;
 }
@@ -27,7 +27,7 @@ export interface AssignmentWithDetails extends Assignment {
   studentName: string;
   roleName: string | null;
   assignedRank: number | null; // 1 = 1st choice, 2 = 2nd choice, ..., null = unranked or unassigned
-  letterScore: number;
+  adjustmentScore: number;
   utilityContribution: number;
 }
 
@@ -41,8 +41,8 @@ export interface MatchConfig {
     5: number;
     unranked: number;
   };
-  // Bonus/penalty points applied based on application letter score (-3 to +3)
-  letterScoreWeights: {
+  // Bonus/penalty points applied based on teacher adjustment score (-3 to +3)
+  adjustmentScoreWeights: {
     [score: number]: number;
   };
 }
@@ -61,14 +61,13 @@ export interface MatchStatistics {
     unranked: number;
   };
   averageRank: number | null; // among assigned students who got a ranked choice
-  topTwoPercent: number; // % of assigned students who got top 2 choices
-  topThreePercent: number; // % of assigned students who got top 3 choices
   rawUtilityScore: number; // The exact objective function score being maximized
-  maxPossibleUtilityScore: number; // If every assigned slot was a 1st choice with max letter score
-  satisfactionPercentage: number; // 0 - 100%
+  maxPossibleUtilityScore: number; // Theoretical max if every assigned slot was a 1st choice with max adjustment score
+  optimalityPercentage: number; // Current score / theoretical optimal score (ignoring locks & manual moves) 0-100%
 }
 
 export interface AppData {
+  classTitle: string;
   roles: Role[];
   students: Student[];
   assignments: Assignment[];
