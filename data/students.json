@@ -1,0 +1,364 @@
+[
+  {
+    "id": "s-01",
+    "name": "Aiden Martinez",
+    "preferences": [
+      "role-line-leader",
+      "role-recess-manager",
+      "role-tech-helper",
+      "role-door-holder",
+      "role-lunch-monitor"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-02",
+    "name": "Bella Chen",
+    "preferences": [
+      "role-library-helper",
+      "role-plant-caretaker",
+      "role-calendar-helper",
+      "role-paper-passer",
+      "role-board-cleaner"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-03",
+    "name": "Caleb Robinson",
+    "preferences": [
+      "role-tech-helper",
+      "role-paper-passer",
+      "role-pencil-specialist",
+      "role-line-leader",
+      "role-door-holder"
+    ],
+    "applicationScore": 0,
+    "notes": ""
+  },
+  {
+    "id": "s-04",
+    "name": "Daisy Patel",
+    "preferences": [
+      "role-substitute-helper",
+      "role-library-helper",
+      "role-paper-passer",
+      "role-calendar-helper"
+    ],
+    "applicationScore": 0,
+    "notes": ""
+  },
+  {
+    "id": "s-05",
+    "name": "Ethan Wright",
+    "preferences": [
+      "role-pencil-specialist",
+      "role-line-leader",
+      "role-door-holder",
+      "role-tech-helper",
+      "role-lunch-monitor"
+    ],
+    "applicationScore": 0,
+    "notes": ""
+  },
+  {
+    "id": "s-06",
+    "name": "Fiona Gallagher",
+    "preferences": [
+      "role-library-helper",
+      "role-board-cleaner",
+      "role-paper-passer",
+      "role-substitute-helper",
+      "role-calendar-helper"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-07",
+    "name": "Gabriel Santos",
+    "preferences": [
+      "role-tech-helper",
+      "role-pencil-specialist",
+      "role-line-leader",
+      "role-door-holder"
+    ],
+    "applicationScore": 0,
+    "notes": ""
+  },
+  {
+    "id": "s-08",
+    "name": "Hannah Kim",
+    "preferences": [
+      "role-calendar-helper",
+      "role-substitute-helper",
+      "role-library-helper",
+      "role-paper-passer",
+      "role-board-cleaner"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-09",
+    "name": "Ian Murphy",
+    "preferences": [
+      "role-door-holder",
+      "role-line-leader",
+      "role-lunch-monitor",
+      "role-recess-manager",
+      "role-tech-helper"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-10",
+    "name": "Jasmine Taylor",
+    "preferences": [
+      "role-paper-passer",
+      "role-library-helper",
+      "role-plant-caretaker",
+      "role-substitute-helper",
+      "role-board-cleaner"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-11",
+    "name": "Kai Takahashi",
+    "preferences": [
+      "role-tech-helper",
+      "role-recess-manager",
+      "role-line-leader",
+      "role-door-holder",
+      "role-pencil-specialist"
+    ],
+    "applicationScore": 2
+  },
+  {
+    "id": "s-12",
+    "name": "Layla Johnson",
+    "preferences": [
+      "role-substitute-helper",
+      "role-calendar-helper",
+      "role-library-helper",
+      "role-plant-caretaker",
+      "role-paper-passer"
+    ],
+    "applicationScore": 1
+  },
+  {
+    "id": "s-13",
+    "name": "Mason Davis",
+    "preferences": [
+      "role-line-leader",
+      "role-recess-manager",
+      "role-door-holder",
+      "role-lunch-monitor",
+      "role-tech-helper"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-14",
+    "name": "Nora Anderson",
+    "preferences": [
+      "role-board-cleaner",
+      "role-pencil-specialist",
+      "role-paper-passer",
+      "role-library-helper",
+      "role-plant-caretaker"
+    ],
+    "applicationScore": 2
+  },
+  {
+    "id": "s-15",
+    "name": "Oliver Thomas",
+    "preferences": [
+      "role-pencil-specialist",
+      "role-board-cleaner",
+      "role-tech-helper",
+      "role-paper-passer",
+      "role-door-holder"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-16",
+    "name": "Penelope Jackson",
+    "preferences": [
+      "role-plant-caretaker",
+      "role-library-helper",
+      "role-paper-passer",
+      "role-substitute-helper",
+      "role-calendar-helper"
+    ],
+    "applicationScore": 1
+  },
+  {
+    "id": "s-17",
+    "name": "Quinn Miller",
+    "preferences": [
+      "role-lunch-monitor",
+      "role-paper-passer",
+      "role-door-holder",
+      "role-recess-manager",
+      "role-line-leader"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-18",
+    "name": "Riley Wilson",
+    "preferences": [
+      "role-recess-manager",
+      "role-line-leader",
+      "role-tech-helper",
+      "role-lunch-monitor",
+      "role-door-holder"
+    ],
+    "applicationScore": 2
+  },
+  {
+    "id": "s-19",
+    "name": "Sophia Garcia",
+    "preferences": [
+      "role-library-helper",
+      "role-calendar-helper",
+      "role-substitute-helper",
+      "role-plant-caretaker",
+      "role-paper-passer"
+    ],
+    "applicationScore": 3
+  },
+  {
+    "id": "s-20",
+    "name": "Tyler Brown",
+    "preferences": [
+      "role-door-holder",
+      "role-recess-manager",
+      "role-line-leader",
+      "role-tech-helper",
+      "role-pencil-specialist"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-21",
+    "name": "Uma Sharma",
+    "preferences": [
+      "role-substitute-helper",
+      "role-calendar-helper",
+      "role-paper-passer",
+      "role-library-helper",
+      "role-board-cleaner"
+    ],
+    "applicationScore": 1
+  },
+  {
+    "id": "s-22",
+    "name": "Victor Rossi",
+    "preferences": [
+      "role-board-cleaner",
+      "role-pencil-specialist",
+      "role-tech-helper",
+      "role-door-holder",
+      "role-paper-passer"
+    ],
+    "applicationScore": -3
+  },
+  {
+    "id": "s-23",
+    "name": "Willow Campbell",
+    "preferences": [
+      "role-paper-passer",
+      "role-plant-caretaker",
+      "role-library-helper",
+      "role-calendar-helper",
+      "role-substitute-helper"
+    ],
+    "applicationScore": 2
+  },
+  {
+    "id": "s-24",
+    "name": "Xavier Gomez",
+    "preferences": [
+      "role-tech-helper",
+      "role-line-leader",
+      "role-recess-manager",
+      "role-door-holder",
+      "role-lunch-monitor"
+    ],
+    "applicationScore": 1
+  },
+  {
+    "id": "s-25",
+    "name": "Yara Al-Mansoor",
+    "preferences": [
+      "role-calendar-helper",
+      "role-library-helper",
+      "role-substitute-helper",
+      "role-paper-passer",
+      "role-plant-caretaker"
+    ],
+    "applicationScore": 3
+  },
+  {
+    "id": "s-26",
+    "name": "Zachary Scott",
+    "preferences": [
+      "role-lunch-monitor",
+      "role-door-holder",
+      "role-recess-manager",
+      "role-pencil-specialist",
+      "role-line-leader"
+    ],
+    "applicationScore": 0
+  },
+  {
+    "id": "s-27",
+    "name": "Amara Brooks",
+    "preferences": [
+      "role-paper-passer",
+      "role-board-cleaner",
+      "role-substitute-helper",
+      "role-library-helper",
+      "role-plant-caretaker"
+    ],
+    "applicationScore": 1
+  },
+  {
+    "id": "s-28",
+    "name": "Beckett Hayes",
+    "preferences": [
+      "role-recess-manager",
+      "role-line-leader",
+      "role-door-holder",
+      "role-lunch-monitor",
+      "role-tech-helper"
+    ],
+    "applicationScore": -1
+  },
+  {
+    "id": "s-29",
+    "name": "Chloe Bennett",
+    "preferences": [
+      "role-plant-caretaker",
+      "role-pencil-specialist",
+      "role-library-helper",
+      "role-board-cleaner",
+      "role-paper-passer"
+    ],
+    "applicationScore": 2
+  },
+  {
+    "id": "s-30",
+    "name": "Dominic Rivera",
+    "preferences": [
+      "role-tech-helper",
+      "role-door-holder",
+      "role-lunch-monitor",
+      "role-recess-manager",
+      "role-line-leader"
+    ],
+    "applicationScore": 0
+  }
+]

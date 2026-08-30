@@ -1,0 +1,152 @@
+[
+  {
+    "studentId": "s-01",
+    "roleId": "role-line-leader",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-02",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-03",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-04",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-05",
+    "roleId": "role-pencil-specialist",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-06",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-07",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-08",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-09",
+    "roleId": "role-door-holder",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-10",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-11",
+    "roleId": "role-tech-helper",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-12",
+    "roleId": "role-substitute-helper",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-13",
+    "roleId": "role-line-leader",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-14",
+    "roleId": "role-board-cleaner",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-15",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-16",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-17",
+    "roleId": "role-lunch-monitor",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-18",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-19",
+    "roleId": "role-library-helper",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-20",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-21",
+    "roleId": "role-substitute-helper",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-22",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-23",
+    "roleId": "role-paper-passer",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-24",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-25",
+    "roleId": "role-calendar-helper",
+    "isLocked": false
+  },
+  {
+    "studentId": "s-26",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-27",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-28",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-29",
+    "roleId": null,
+    "isLocked": false
+  },
+  {
+    "studentId": "s-30",
+    "roleId": null,
+    "isLocked": false
+  }
+]

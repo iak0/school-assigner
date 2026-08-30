@@ -1,0 +1,82 @@
+[
+  {
+    "id": "role-line-leader",
+    "name": "Line Leader",
+    "capacity": 2,
+    "description": "Leads the class quietly in the hallway to specials, lunch, and recess.",
+    "icon": "🚶‍♂️",
+    "color": "amber"
+  },
+  {
+    "id": "role-door-holder",
+    "name": "Door Holder",
+    "capacity": 1,
+    "description": "Holds classroom and hallway doors open safely for the entire class.",
+    "icon": "🚪",
+    "color": "blue"
+  },
+  {
+    "id": "role-paper-passer",
+    "name": "Paper & Materials Passer",
+    "capacity": 1,
+    "description": "Hands out worksheets, notebooks, and art supplies to each desk cluster.",
+    "icon": "📄",
+    "color": "emerald"
+  },
+  {
+    "id": "role-tech-helper",
+    "name": "Tech Specialist",
+    "capacity": 1,
+    "description": "Manages Chromebook cart, plugs in chargers, and assists with projector.",
+    "icon": "💻",
+    "color": "indigo"
+  },
+  {
+    "id": "role-board-cleaner",
+    "name": "Whiteboard Cleaner",
+    "capacity": 1,
+    "description": "Erases the board at the end of lessons and organizes markers.",
+    "icon": "🧼",
+    "color": "teal"
+  },
+  {
+    "id": "role-library-helper",
+    "name": "Classroom Librarian",
+    "capacity": 1,
+    "description": "Organizes the reading corner by genre and checks book bins.",
+    "icon": "📚",
+    "color": "purple"
+  },
+  {
+    "id": "role-pencil-specialist",
+    "name": "Pencil Sharpener & Supply Boss",
+    "capacity": 1,
+    "description": "Sharpens dull pencils for the class community jar each morning.",
+    "icon": "✏️",
+    "color": "orange"
+  },
+  {
+    "id": "role-lunch-monitor",
+    "name": "Lunch Cart Leader",
+    "capacity": 1,
+    "description": "Inspects cafeteria table cleanliness and helps wipe down desks.",
+    "icon": "🍎",
+    "color": "red"
+  },
+  {
+    "id": "role-calendar-helper",
+    "name": "Calendar & Morning Announcer",
+    "capacity": 1,
+    "description": "Updates the daily date, weather tracker, and daily schedule board.",
+    "icon": "📅",
+    "color": "sky"
+  },
+  {
+    "id": "role-substitute-helper",
+    "name": "Substitute & Teacher Assistant",
+    "capacity": 2,
+    "description": "Guides visitors, takes attendance messages to the main office.",
+    "icon": "⭐",
+    "color": "yellow"
+  }
+]
