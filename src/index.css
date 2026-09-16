@@ -23,15 +23,95 @@
   body {
     background: white !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .no-print {
     display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
   .print-only {
     display: block !important;
   }
   .page-break {
     page-break-before: always;
+  }
+
+  /* Collapse poster container to edge of page */
+  .bg-white.rounded-3xl {
+    border-radius: 0 !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+    padding: 0.4rem !important;
+    margin: 0 !important;
+  }
+
+  /* Tighten poster header - removed subtitle, smaller title */
+  .text-center.pb-2 {
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+  .text-center.pb-2 .inline-flex {
+    margin-bottom: 0.2rem !important;
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.65rem !important;
+  }
+  .text-center.pb-2 h1 {
+    font-size: 1.1rem !important;
+    line-height: 1.15 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Tighten role cards */
+  .grid.gap-2\.5 {
+    gap: 0.35rem !important;
+  }
+  .bg-slate-50\/60 {
+    padding: 0.4rem !important;
+  }
+  .bg-slate-50\/60 h3 {
+    font-size: 0.7rem !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.1rem !important;
+  }
+  .bg-slate-50\/60 p.text-\[10px\] {
+    font-size: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    white-space: normal !important;
+  }
+  .pt-1 {
+    padding-top: 0.25rem !important;
+  }
+  /* All assignees - flex row */
+  .flex-wrap.gap-1 {
+    gap: 0.15rem !important;
+  }
+  .flex-wrap.gap-1 span {
+    padding: 0.12rem 0.25rem !important;
+    font-size: 0.55rem !important;
+  }
+
+  /* Tighten standby section */
+  .mt-4 {
+    margin-top: 0.4rem !important;
+  }
+  .bg-blue-50\/60 {
+    padding: 0.35rem !important;
+  }
+  .bg-blue-50\/60 h3 {
+    font-size: 0.55rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+  .bg-blue-50\/60 p {
+    font-size: 0.5rem !important;
+    margin-bottom: 0.2rem !important;
+  }
+  .bg-blue-50\/60 .flex-wrap.gap-1 span {
+    padding: 0.1rem 0.2rem !important;
+    font-size: 0.5rem !important;
   }
 }
 

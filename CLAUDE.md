@@ -1,6 +1,6 @@
 # Classroom Role Assigner (4th Grade)
 
-A user-friendly, responsive web application designed for elementary school teachers to match students (~30 students) to classroom jobs/roles (~20 slots) based on their top 5 ranked preferences, role capacities, teacher adjustment scores (-3 to +3), and teacher locks/overrides.
+A user-friendly, responsive web application designed for elementary school teachers to match students (~30 students) to classroom jobs/roles (~24 slots) based on their top 5 ranked preferences, role capacities, teacher adjustment scores (-3 to +3), and teacher locks/overrides.
 
 **Deployed as a static site to GitHub Pages** — no backend required. All data persists in browser `localStorage` with export/import/share-link sync for multi-device workflows.
 
@@ -38,8 +38,8 @@ npm test
 ```
 
 The test suite covers:
-- **Matcher engine** (5 tests): Min-Cost Max-Flow algorithm correctness, preference scoring, letter weights, lock enforcement, standby pool
-- **App integration** (14 tests): class title persistence, export/import JSON, share link generation, clear all data, URL hash sync, matching board integration, lz-string compression round-trip
+- **Matcher engine** (7 tests): Min-Cost Max-Flow algorithm correctness, preference scoring, adjustment weights, lock enforcement, standby pool, random tiebreaker for equal utilities, rotation history
+- **App integration** (16 tests): class title persistence, export/import JSON, share link generation, clear all data, URL hash sync, matching board integration, lz-string compression round-trip, rotation history persistence
 
 ---
 
@@ -68,8 +68,9 @@ The matching engine is implemented in [`src/engine/matcher.ts`](file:///Users/ka
 - **Objective Function**:
   $$\text{Utility}(s, r) = \text{RankScore}(s, r) + \text{AdjustmentWeight}(s.\text{applicationScore})$$
   $$\text{Cost}(s, r) = \text{MAX\_POSSIBLE\_WEIGHT} - \text{Utility}(s, r)$$
+- **Random Tiebreaker**: Tiny random epsilon (0.0001) added to edge costs to avoid deterministic assignment when multiple student-role pairs have identical utility (e.g., when no preferences are set). This is far smaller than the minimum meaningful utility difference (10 points).
 - **Hard Lock Enforcement (🔒)**: Locked students bypass the flow graph and are fixed to their designated role before unassigned slots are solved for the remaining students.
-- **Standby Reserve Pool**: When student count ($~30$) exceeds total available slots ($~20$), unassigned students are cleanly placed in the Standby Reserve pool.
+- **Standby Reserve Pool**: When student count ($~30$) exceeds total available slots ($~24$), unassigned students are cleanly placed in the Standby Reserve pool.
 
 ### 2. Optimality Metric: Theoretical Maximum Without Locks
 The **% of Optimality** metric shows how close the current assignment is to the theoretical best possible outcome:
@@ -92,26 +93,35 @@ The **% of Optimality** metric shows how close the current assignment is to the 
 - **🔒 Pinning & Locks**: Lock individual assignments so they remain untouched during recalculation/regeneration.
 - **🧹 Clear Assignments**: Reset all assignments back to the Standby pool.
 - **🎒 Sticky Standby Sidebar**: Positioned on the right with an instant search filter so all cards and bins fit on a single screen without vertical scrolling.
+- **Uses shared hooks/components**: `useStudentHistory` for job history, `CompactPreferencePill` for preference display.
 
 ### 2. Live Stats Sidebar ([`src/components/StatsSidebar.tsx`](file:///Users/kai/code/school/assigner/src/components/StatsSidebar.tsx))
-- **Vertical metric cards** (1-column layout): Slots Filled → #1 Choice → Avg Rank → % of Optimality → Score
-- **% of Optimality**: Current raw utility score ÷ theoretical maximum (same rankings/scores, no locks/manual moves)
-- **Raw Utility Score**: Subtle gray card (HelpCircle icon) with formula tooltip; same visual weight as other metrics
+- **Vertical metric cards** (1-column layout): Slots Filled → #1 Choice → Top 3 Choices → Avg Rank → % of Optimality → Score
+- **% of Optimality**: Current raw utility score ÷ theoretical maximum (same rankings/scores, no locks/manual moves) — includes info tooltip explaining the metric
+- **Top 3 Choices**: Shows count and percentage of students assigned to their 1st, 2nd, or 3rd choice
+- **Raw Utility Score**: Subtle gray card (HelpCircle icon) with formula tooltip; same visual weight as other metrics (no longer monospace)
 - **Rank Distribution**: Single-row horizontal pills (e.g., "1st 12, 2nd 8, 3rd 5") with hidden horizontal scroll
+- **Built with shared components**: `MetricCard` (6 metric cards) and `RankPill` (rank distribution row)
 - Removed: "Satisfaction Index", "% with Top 2 Choices"
 
 ### 3. Student Roster & Preferences ([`src/components/StudentManager.tsx`](file:///Users/kai/code/school/assigner/src/components/StudentManager.tsx))
 - Roster management for ~30 students.
 - Top 5 ranked choice selectors with duplicate prevention.
-- -3 to +3 teacher adjustment rating selector with color-coded badges.
-- Bulk roster importer for pasting names directly from spreadsheets or class lists.
+- -3 to +3 teacher adjustment rating selector with color-coded badges (renamed from "Letter Rating" to "Adjustment").
+- Bulk roster importer for pasting names directly from spreadsheets or class lists (adds students with neutral adjustment and empty preferences).
+- **Inline edit form**: Clicking "Edit" on a student opens a form directly in the table row below that student, with smooth scroll into view.
+- **Inline add form**: "Add Student" shows a blank form at the top of the table (does not prefill any preferences).
+- **Refactored to use shared components**: `StudentForm` (add/edit form), `PreferenceList` (preference display), `useStudentHistory` hook.
 
 ### 4. Job & Capacity Manager ([`src/components/RoleManager.tsx`](file:///Users/kai/code/school/assigner/src/components/RoleManager.tsx))
 - Configure job titles, slot capacities (1, 2, 3+ slots), and descriptions.
 - **Custom Emoji Input**: Single-character emoji text box supporting any native emoji with shortcut hint (**`⌘+Ctrl+Space`** on Mac / **`Win+.`** on Windows) plus quick-click school emoji shortcuts.
+- **Inline Edit & Add Forms**: Clicking "Edit" on a job replaces that job's card with a compact edit form (same size/layout as the card). "Add New Job" shows an inline form at the top of the grid. No more scrolling to a fixed editor at the top of the screen.
+- **Refactored to use shared component**: `RoleForm` (add/edit form).
 
 ### 5. Printable Poster & Export ([`src/components/PrintPoster.tsx`](file:///Users/kai/code/school/assigner/src/components/PrintPoster.tsx))
 - "Our Classroom Leaders & Helpers 🎒" chart styled for 4th-grade classroom walls.
+- **Compact layout** optimized for 1-2 printed pages: 5-column grid on desktop, tighter spacing, smaller text, smaller emoji (text-lg), no helper count row.
 - Formatted for single-click browser printing (`@media print`) and PDF export.
 - **Dynamic class title** from editable header field.
 - JSON backup export and quick text summary copy.
@@ -129,6 +139,23 @@ The **% of Optimality** metric shows how close the current assignment is to the 
 - Inline edit on click: Enter to save, Escape to cancel, blur to save.
 - Persisted in localStorage and included in export/import/share links.
 
+### 8. Shared Architecture (Refactored)
+The codebase has been refactored for maintainability with shared utilities, hooks, and components:
+
+**Shared Components:**
+- **`StudentForm`** — Unified add/edit form for students (used by StudentManager for both inline add and edit)
+- **`RoleForm`** — Unified add/edit form for roles (used by RoleManager for both inline add and edit)
+- **`MetricCard`** — Reusable metric display with icon, value, label, sub-label, and optional tooltip (6 instances in StatsSidebar)
+- **`RankPill`** — Reusable rank indicator pill with preset configs for 1st-5th + Unranked (used by StatsSidebar)
+- **`PreferencePill` / `CompactPreferencePill` / `PreferenceList`** — Unified preference display (used by StudentManager, AssignmentBoard)
+
+**Shared Hooks:**
+- **`useStudentHistory`** — Provides `getStudentHistory(studentId)` and `getRecentRoleRepeat(studentId, roleId)` from rotation history (used by StudentManager, AssignmentBoard, StatsSidebar)
+
+**Shared Utilities:**
+- **`clipboard.ts`** — `copyToClipboard(text)` with modern Clipboard API + `execCommand` fallback for ChromeOS/non-secure contexts
+- **`rankColors.ts`** — Centralized rank color configs (bg, border, text, pill variants) for 1st-5th choices + unranked
+
 ---
 
 ## 📁 Data Persistence & File Structure
@@ -140,14 +167,27 @@ src/
 ├── types/index.ts             # TypeScript data models and interfaces (AppData includes classTitle)
 ├── engine/
 │   ├── matcher.ts             # Min-Cost Max-Flow algorithm & utility evaluator
-│   └── matcher.test.ts        # Vitest unit test suite (5 tests)
+│   └── matcher.test.ts        # Vitest unit test suite (7 tests)
 ├── components/
 │   ├── Navbar.tsx             # Tab header, Settings dropdown, EditableClassTitle
 │   ├── StatsSidebar.tsx       # Vertical metrics, % optimality, rank pills (1-col)
 │   ├── AssignmentBoard.tsx    # Interactive board with drag & drop and sticky standby dock
 │   ├── StudentManager.tsx     # Student roster, top 5 choice ranking, letter score pills
 │   ├── RoleManager.tsx        # Job definitions, capacities, custom emoji input
-│   └── PrintPoster.tsx        # Printable classroom poster and JSON exporter
+│   ├── PrintPoster.tsx        # Printable classroom poster and JSON exporter
+│   ├── StudentForm.tsx        # Shared add/edit form for students (extracted from StudentManager)
+│   ├── RoleForm.tsx           # Shared add/edit form for roles (extracted from RoleManager)
+│   ├── MetricCard.tsx         # Reusable metric display card with tooltip (used by StatsSidebar)
+│   ├── RankPill.tsx           # Reusable rank pill component with presets (used by StatsSidebar, StudentManager)
+│   ├── PreferencePill.tsx     # Shared preference display pills (PreferencePill, CompactPreferencePill, PreferenceList)
+│   ├── AntiRepetitionSettingsModal.tsx  # Anti-repetition settings modal
+│   ├── FinalizeRotationModal.tsx         # Finalize rotation modal
+│   └── RotationHistory.tsx    # Rotation history display
+├── hooks/
+│   └── useStudentHistory.ts   # Shared hook for student job history (getStudentHistory, getRecentRoleRepeat)
+├── utils/
+│   ├── clipboard.ts           # Copy to clipboard with Clipboard API + execCommand fallback (ChromeOS)
+│   └── rankColors.ts          # Shared rank color configurations (1st-5th + unranked)
 ├── App.tsx                    # Main state management, localStorage auto-save, export/import/share
 ├── main.tsx                   # App entry point
 └── test-setup.ts              # Vitest jsdom mocks (localStorage, clipboard, URL, etc.)
@@ -189,6 +229,15 @@ export default defineConfig({
 
 ### Clean Slate Guarantee
 First-time visitors see **empty state**: no dummy students, no dummy jobs. Teachers build their class from scratch or use "Load Default Jobs" template.
+
+### Default Roles Template (Ms. Yi's Classroom)
+The "Load Default Jobs" button populates 21 roles (24 total slots) based on Ms. Yi's 4th grade classroom:
+- **Line Leader** (2), **Door Monitor** (1), **Attendance Monitor** (1), **Paper Passer** (2)
+- **Class Nurse** (1), **Technology Assistant** (2), **Librarian** (1), **Trash Collector** (1)
+- **Patriotic Leader** (1), **Pencil Monitor** (1), **Desk Inspector** (1), **Bin & Cubby Inspector** (1)
+- **Energy Monitor** (1), **Chair Inspector** (1), **Supply Manager** (1), **Receptionist** (1)
+- **Substitute** (1), **Lunch Cart Leader** (1), **Agenda Agent** (1), **Mailbox Monitor** (1)
+- **Homework Monitor** (1)
 
 ### Key Dependencies
 - `lz-string` — URL-safe compression for share links

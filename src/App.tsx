@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Student, Role, Assignment, AppData } from './types';
+import { Student, Role, Assignment, AppData, RotationSnapshot, AntiRepetitionConfig } from './types';
 import { calculateStatistics, generateAssignments } from './engine/matcher';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { StatsSidebar } from './components/StatsSidebar';
@@ -7,11 +7,19 @@ import { AssignmentBoard } from './components/AssignmentBoard';
 import { StudentManager } from './components/StudentManager';
 import { RoleManager } from './components/RoleManager';
 import { PrintPoster } from './components/PrintPoster';
+import { RotationHistory } from './components/RotationHistory';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import { Sparkles, RotateCcw } from 'lucide-react';
+import { Sparkles, RotateCcw, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { copyToClipboard } from './utils/clipboard';
 
 const STORAGE_KEY = 'classroom_role_assigner_data_v1';
+
+const DEFAULT_ANTI_REPETITION_CONFIG: AntiRepetitionConfig = {
+  recencyWindow: 2,
+  avoidanceStrictness: 'balanced',
+  standbyPriority: true,
+};
 
 // Clean initial state - empty for first-time users
 const EMPTY_ROLES: Role[] = [];
@@ -19,17 +27,29 @@ const EMPTY_STUDENTS: Student[] = [];
 const EMPTY_ASSIGNMENTS: Assignment[] = [];
 
 // Default roles template (used when teacher wants to start with common classroom jobs)
+// Based on Ms. Yi's 4th grade classroom leadership roles
 const DEFAULT_ROLES_TEMPLATE: Role[] = [
-  { id: 'role-line-leader', name: 'Line Leader', capacity: 2, description: 'Leads the class quietly in the hallway to specials, lunch, and recess.', icon: '🚶‍♂️', color: 'amber' },
-  { id: 'role-door-holder', name: 'Door Holder', capacity: 1, description: 'Holds classroom and hallway doors open safely for the entire class.', icon: '🚪', color: 'blue' },
-  { id: 'role-paper-passer', name: 'Paper & Materials Passer', capacity: 1, description: 'Hands out worksheets, notebooks, and art supplies to each desk cluster.', icon: '📄', color: 'emerald' },
-  { id: 'role-tech-helper', name: 'Tech Specialist', capacity: 1, description: 'Manages Chromebook cart, plugs in chargers, and assists with projector.', icon: '💻', color: 'indigo' },
-  { id: 'role-board-cleaner', name: 'Whiteboard Cleaner', capacity: 1, description: 'Erases the board at the end of lessons and organizes markers.', icon: '🧼', color: 'teal' },
-  { id: 'role-library-helper', name: 'Classroom Librarian', capacity: 1, description: 'Organizes the reading corner by genre and checks book bins.', icon: '📚', color: 'purple' },
-  { id: 'role-pencil-specialist', name: 'Pencil Sharpener & Supply Boss', capacity: 1, description: 'Sharpens dull pencils for the class community jar each morning.', icon: '✏️', color: 'orange' },
-  { id: 'role-lunch-monitor', name: 'Lunch Cart Leader', capacity: 1, description: 'Inspects cafeteria table cleanliness and helps wipe down desks.', icon: '🍎', color: 'red' },
-  { id: 'role-calendar-helper', name: 'Calendar & Morning Announcer', capacity: 1, description: 'Updates the daily date, weather tracker, and daily schedule board.', icon: '📅', color: 'sky' },
-  { id: 'role-substitute-helper', name: 'Substitute & Teacher Assistant', capacity: 2, description: 'Guides visitors, takes attendance messages to the main office.', icon: '⭐', color: 'yellow' },
+  { id: 'role-line-leader', name: 'Line Leader', capacity: 2, description: 'Lead the class through the halls while stopping at checkpoints', icon: '🚶‍♂️', color: 'amber' },
+  { id: 'role-door-monitor', name: 'Door Monitor', capacity: 1, description: 'Open and close the door when exiting or entering. Grab the BLUE emergency bag by the door during drills', icon: '🚪', color: 'blue' },
+  { id: 'role-attendance-monitor', name: 'Attendance Monitor', capacity: 1, description: 'Take attendance and lunch count and reset the magnets', icon: '📋', color: 'indigo' },
+  { id: 'role-paper-passer', name: 'Paper Passer', capacity: 2, description: 'Pass out papers', icon: '📄', color: 'emerald' },
+  { id: 'role-class-nurse', name: 'Class Nurse', capacity: 1, description: 'Provide bandaids or help with minor care when needed', icon: '🩹', color: 'rose' },
+  { id: 'role-tech-assistant', name: 'Technology Assistant', capacity: 2, description: 'Help with minor tech issues. Make sure all chromebooks are plugged in at the end of the day', icon: '💻', color: 'violet' },
+  { id: 'role-librarian', name: 'Librarian', capacity: 1, description: 'Make sure the Library is neat and orderly. Reset round table cushion seats', icon: '📚', color: 'purple' },
+  { id: 'role-trash-collector', name: 'Trash Collector', capacity: 1, description: 'Move the trash bins to their spots in the morning. Move the trash bins to the front door at the end of the day', icon: '🗑️', color: 'stone' },
+  { id: 'role-patriotic-leader', name: 'Patriotic Leader', capacity: 1, description: 'Lead the class in our flag salute', icon: '🇺🇸', color: 'red' },
+  { id: 'role-pencil-monitor', name: 'Pencil Monitor', capacity: 1, description: 'Sharpen dull pencils at the end of the day', icon: '✏️', color: 'amber' },
+  { id: 'role-desk-inspector', name: 'Desk Inspector', capacity: 1, description: 'Inspect student desks for cleanliness and neatness. Desks should look orderly and any work should be in a neat stack', icon: '🪑', color: 'slate' },
+  { id: 'role-bin-cubby-inspector', name: 'Bin & Cubby Inspector', capacity: 1, description: 'Inspect work "Turn in" bins and student cubby shelf space. Bins should look orderly with work in neat stacks. Cubby spaces should look orderly. All papers should be inside folders', icon: '📦', color: 'zinc' },
+  { id: 'role-energy-monitor', name: 'Energy Monitor', capacity: 1, description: 'Turn off the lights when we leave the classroom. In charge of monitoring the lights in the classroom', icon: '💡', color: 'yellow' },
+  { id: 'role-chair-inspector', name: 'Chair Inspector', capacity: 1, description: 'Make sure chairs are stacked by table group and help stack any extra chairs', icon: '🪑', color: 'gray' },
+  { id: 'role-supply-manager', name: 'Supply Manager', capacity: 1, description: 'Make sure supplies are stocked and organized', icon: '📦', color: 'teal' },
+  { id: 'role-receptionist', name: 'Receptionist', capacity: 1, description: 'Answer the phone. "Hello this is Room 16\'s receptionist speaking. How can I help you today?" Deliver and receive messages', icon: '📞', color: 'sky' },
+  { id: 'role-substitute', name: 'Substitute', capacity: 1, description: 'Make sure everyone checks their mailbox', icon: '⭐', color: 'yellow' },
+  { id: 'role-lunch-cart-leader', name: 'Lunch Cart Leader', capacity: 1, description: 'Roll the lunch cart out and back into the classroom during breaks and lunch', icon: '🍎', color: 'red' },
+  { id: 'role-agenda-agent', name: 'Agenda Agent', capacity: 1, description: 'Check to make sure everyone has everything written down in the agenda in the morning', icon: '📝', color: 'blue' },
+  { id: 'role-mailbox-monitor', name: 'Mailbox Monitor', capacity: 1, description: 'Put away any work that needs to be sorted into the mailbox. Make sure everyone collects their papers from the mailbox', icon: '📬', color: 'indigo' },
+  { id: 'role-homework-monitor', name: 'Homework Monitor', capacity: 1, description: 'Check off students who have turned in their homework and put the homework in number order', icon: '📚', color: 'emerald' },
 ];
 
 export default function App() {
@@ -38,10 +58,13 @@ export default function App() {
   const [roles, setRoles] = useState<Role[]>(EMPTY_ROLES);
   const [students, setStudents] = useState<Student[]>(EMPTY_STUDENTS);
   const [assignments, setAssignments] = useState<Assignment[]>(EMPTY_ASSIGNMENTS);
+  const [rotationHistory, setRotationHistory] = useState<RotationSnapshot[]>([]);
+  const [antiRepetitionConfig, setAntiRepetitionConfig] = useState<AntiRepetitionConfig>(DEFAULT_ANTI_REPETITION_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
   const lastSavedStateRef = useRef<string>('');
 
@@ -64,6 +87,7 @@ export default function App() {
   // Load data from localStorage or URL hash
   const loadData = useCallback(async () => {
     try {
+      console.log('[loadData] Starting load...');
       // Check URL hash first for share link
       const hash = window.location.hash.slice(1);
       if (hash.startsWith('data=')) {
@@ -71,32 +95,31 @@ export default function App() {
         const decompressed = decompressFromEncodedURIComponent(compressed);
         if (decompressed) {
           const parsed = JSON.parse(decompressed) as AppData;
-          if (parsed.classTitle) setClassTitle(parsed.classTitle);
-          if (parsed.roles) setRoles(parsed.roles);
-          if (parsed.students) setStudents(parsed.students);
-          if (parsed.assignments) setAssignments(parsed.assignments);
-          // Persist to localStorage so it survives the reload
+          console.log('[loadData] Loaded from URL hash, rotationHistory:', parsed.rotationHistory?.length || 0);
+          // Persist to localStorage first, then navigate to clean URL
           const serialized = JSON.stringify({
-            classTitle: parsed.classTitle,
-            roles: parsed.roles,
-            students: parsed.students,
-            assignments: parsed.assignments,
+            classTitle: parsed.classTitle || 'My Class',
+            roles: parsed.roles || [],
+            students: parsed.students || [],
+            assignments: parsed.assignments || [],
+            rotationHistory: parsed.rotationHistory || [],
+            antiRepetitionConfig: parsed.antiRepetitionConfig || DEFAULT_ANTI_REPETITION_CONFIG,
           });
-          lastSavedStateRef.current = serialized;
           localStorage.setItem(STORAGE_KEY, serialized);
-          setLastSavedAt(new Date());
-          setHasLoaded(true);
-          // Clear the hash from URL and reload on next tick to let state apply
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          setTimeout(() => window.location.reload(), 0);
+          lastSavedStateRef.current = serialized;
+          // Navigate to clean URL (triggers fresh load from localStorage)
+          const cleanUrl = window.location.origin + window.location.pathname + window.location.search;
+          window.location.href = cleanUrl;
           return;
         }
       }
 
       // Load from localStorage
       const cached = localStorage.getItem(STORAGE_KEY);
+      console.log('[loadData] localStorage cached:', cached ? 'found' : 'NOT FOUND');
       if (cached) {
         const parsed = JSON.parse(cached) as AppData;
+        console.log('[loadData] Parsed rotationHistory:', parsed.rotationHistory?.length || 0, 'items');
         if (parsed.classTitle) setClassTitle(parsed.classTitle);
         if (parsed.roles) setRoles(parsed.roles);
         if (parsed.students) setStudents(parsed.students);
@@ -106,6 +129,12 @@ export default function App() {
           // Ensure assignments exist for all students
           setAssignments(ensureAssignments(parsed.students || [], parsed.roles || [], []));
         }
+        // Load history and anti-repetition config
+        if (parsed.rotationHistory) {
+          console.log('[loadData] Setting rotationHistory state:', parsed.rotationHistory.length);
+          setRotationHistory(parsed.rotationHistory);
+        }
+        if (parsed.antiRepetitionConfig) setAntiRepetitionConfig(parsed.antiRepetitionConfig);
         lastSavedStateRef.current = cached;
         setLastSavedAt(new Date());
         setHasLoaded(true);
@@ -137,27 +166,35 @@ export default function App() {
     loadData();
   }, [loadData]);
 
-  // Save to localStorage
+  // Save to localStorage - accepts optional overrides to avoid stale closure
   const saveToDisk = useCallback(
-    async (showToast = true) => {
+    async (showToast = true, overrides?: { rotationHistory?: RotationSnapshot[]; antiRepetitionConfig?: AntiRepetitionConfig }) => {
       try {
         setIsSaving(true);
+        const currentRotationHistory = overrides?.rotationHistory ?? rotationHistory;
+        const currentAntiRepetitionConfig = overrides?.antiRepetitionConfig ?? antiRepetitionConfig;
         const serialized = JSON.stringify({
           classTitle,
           roles,
           students,
           assignments,
+          rotationHistory: currentRotationHistory,
+          antiRepetitionConfig: currentAntiRepetitionConfig,
         });
+        console.log('[saveToDisk] Saving to localStorage, rotationHistory:', currentRotationHistory.length, 'items');
+        console.log('[saveToDisk] Serialized length:', serialized.length);
         lastSavedStateRef.current = serialized;
 
         localStorage.setItem(STORAGE_KEY, serialized);
+        console.log('[saveToDisk] localStorage.setItem complete');
 
         setLastSavedAt(new Date());
         if (showToast) {
           setSaveMessage('Saved to browser');
           setTimeout(() => setSaveMessage(null), 2500);
         }
-      } catch {
+      } catch (e) {
+        console.error('[saveToDisk] Error:', e);
         setLastSavedAt(new Date());
         if (showToast) {
           setSaveMessage('Saved locally');
@@ -167,26 +204,28 @@ export default function App() {
         setIsSaving(false);
       }
     },
-    [classTitle, roles, students, assignments]
+    [classTitle, roles, students, assignments, rotationHistory, antiRepetitionConfig]
   );
 
   // Auto-save debounced only when data has genuinely changed
   useEffect(() => {
     if (!hasLoaded) return;
 
-    const currentSerialized = JSON.stringify({ classTitle, roles, students, assignments });
+    const currentSerialized = JSON.stringify({ classTitle, roles, students, assignments, rotationHistory, antiRepetitionConfig });
 
     // Skip if state has not loaded yet or hasn't changed
     if (!lastSavedStateRef.current || currentSerialized === lastSavedStateRef.current) {
+      console.log('[auto-save] No change detected, skipping');
       return;
     }
 
+    console.log('[auto-save] Change detected, scheduling save...');
     const timer = setTimeout(() => {
       saveToDisk(false);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [classTitle, roles, students, assignments, saveToDisk, hasLoaded]);
+  }, [classTitle, roles, students, assignments, rotationHistory, antiRepetitionConfig, saveToDisk, hasLoaded]);
 
   // Handle Updates
   const handleUpdateRoles = (newRoles: Role[]) => {
@@ -207,7 +246,10 @@ export default function App() {
 
   // Generate optimal matches
   const handleGenerateMatches = () => {
-    const newAssignments = generateAssignments(students, roles, assignments);
+    const newAssignments = generateAssignments(students, roles, assignments, {
+      rotationHistory,
+      antiRepetitionConfig,
+    });
     setAssignments(newAssignments);
   };
 
@@ -225,7 +267,7 @@ export default function App() {
 
   // Export data as JSON file
   const handleExportJson = () => {
-    const data: AppData = { classTitle, roles, students, assignments };
+    const data: AppData = { classTitle, roles, students, assignments, rotationHistory, antiRepetitionConfig };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -254,6 +296,8 @@ export default function App() {
         } else {
           setAssignments(ensureAssignments(parsed.students || [], parsed.roles || [], []));
         }
+        if (parsed.rotationHistory) setRotationHistory(parsed.rotationHistory);
+        if (parsed.antiRepetitionConfig) setAntiRepetitionConfig(parsed.antiRepetitionConfig);
         setSaveMessage('Imported class file!');
         setTimeout(() => setSaveMessage(null), 2500);
       } catch {
@@ -266,17 +310,56 @@ export default function App() {
 
   // Generate shareable URL
   const handleCopyShareLink = () => {
-    const data: AppData = { classTitle, roles, students, assignments };
+    const data: AppData = { classTitle, roles, students, assignments, rotationHistory, antiRepetitionConfig };
     const compressed = compressToEncodedURIComponent(JSON.stringify(data));
     const shareUrl = `${window.location.origin}${window.location.pathname}#data=${compressed}`;
 
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setSaveMessage('Share link copied!');
-      setTimeout(() => setSaveMessage(null), 2500);
-    }).catch(() => {
-      setSaveMessage('Failed to copy link');
+    copyToClipboard(shareUrl).then((success) => {
+      setSaveMessage(success ? 'Share link copied!' : 'Failed to copy link');
       setTimeout(() => setSaveMessage(null), 2500);
     });
+  };
+
+  // Finalize rotation - create snapshot and optionally clear board
+  const handleFinalizeRotation = (name: string, notes: string, clearBoard: boolean) => {
+    const now = new Date().toISOString();
+    const roleMap = new Map(roles.map(r => [r.id, r]));
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    // Create snapshot from current state
+    const snapshot: RotationSnapshot = {
+      id: `rot-${Date.now()}`,
+      name,
+      createdAt: now,
+      finalizedAt: now,
+      notes,
+      assignments: assignments.map(a => ({
+        studentId: a.studentId,
+        roleId: a.roleId,
+        roleName: a.roleId ? roleMap.get(a.roleId)?.name || null : null,
+        studentName: studentMap.get(a.studentId)?.name || 'Unknown',
+      })),
+    };
+
+    // Add to history
+    const newHistory = [...rotationHistory, snapshot];
+    console.log('[handleFinalizeRotation] New history length:', newHistory.length);
+    setRotationHistory(newHistory);
+
+    // Optionally clear board
+    if (clearBoard) {
+      const cleared = assignments.map(a => ({ ...a, roleId: null, isLocked: false }));
+      setAssignments(cleared);
+      setSaveMessage(`Rotation "${name}" finalized! Board cleared for next cycle.`);
+    } else {
+      setSaveMessage(`Rotation "${name}" finalized! Current board kept as draft.`);
+    }
+    setTimeout(() => setSaveMessage(null), 3000);
+
+    // Persist immediately so rotation history survives refresh
+    // Pass newHistory to avoid stale closure
+    console.log('[handleFinalizeRotation] Calling saveToDisk with new history...');
+    saveToDisk(false, { rotationHistory: newHistory });
   };
 
   // Clear all data (reset to empty state)
@@ -285,12 +368,16 @@ export default function App() {
     setRoles(EMPTY_ROLES);
     setStudents(EMPTY_STUDENTS);
     setAssignments(EMPTY_ASSIGNMENTS);
+    setRotationHistory([]);
+    setAntiRepetitionConfig(DEFAULT_ANTI_REPETITION_CONFIG);
     localStorage.removeItem(STORAGE_KEY);
     lastSavedStateRef.current = JSON.stringify({
       classTitle: 'My Class',
       roles: EMPTY_ROLES,
       students: EMPTY_STUDENTS,
       assignments: EMPTY_ASSIGNMENTS,
+      rotationHistory: [],
+      antiRepetitionConfig: DEFAULT_ANTI_REPETITION_CONFIG,
     });
     setLastSavedAt(null);
     setSaveMessage('All data cleared!');
@@ -342,58 +429,79 @@ export default function App() {
       {/* Main Content Area */}
       <main className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
         {activeTab === 'board' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Sidebar: Stats (1 col) */}
-            <div className="lg:col-span-1">
-              <StatsSidebar stats={stats} />
-            </div>
-
-            {/* Right Side: Board + Actions (3 cols) */}
-            <div className="lg:col-span-3">
-              {/* Board Header with Actions - Full Width Gradient Bar */}
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🎯</span>
-                    <h2 className="text-base sm:text-lg font-bold">Classroom Job Matching Board</h2>
-                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal hidden md:inline">
-                      Drag students to swap, move, or unassign
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleClearAssignments}
-                    disabled={assignments.length === 0}
-                    className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-2 rounded-xl border border-white/20 transition-all text-xs disabled:opacity-40"
-                    title="Clear all student assignments"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Clear
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleGenerateWithConfetti}
-                    disabled={roles.length === 0 || students.length === 0}
-                    className="flex items-center gap-1.5 bg-white hover:bg-blue-50 text-blue-700 font-extrabold px-4 py-2 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-50"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                    ✨ Generate Optimal Matches
-                  </button>
+          <>
+            {/* Full-width Header with Actions - Gradient Bar */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎯</span>
+                  <h2 className="text-base sm:text-lg font-bold">Classroom Job Matching Board</h2>
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal hidden md:inline">
+                    Drag students to swap, move, or unassign
+                  </span>
                 </div>
               </div>
 
-              <AssignmentBoard
-                students={students}
-                roles={roles}
-                assignments={assignments}
-                onUpdateAssignments={handleUpdateAssignments}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearAssignments}
+                  disabled={assignments.length === 0}
+                  className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-2 rounded-xl border border-white/20 transition-all text-xs disabled:opacity-40"
+                  title="Clear all student assignments"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowFinalizeModal(true)}
+                  disabled={assignments.length === 0}
+                  className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl shadow-md transition-all text-xs disabled:opacity-50"
+                  title="Archive current assignments and start next rotation"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Finalize Rotation 🔒
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateWithConfetti}
+                  disabled={roles.length === 0 || students.length === 0}
+                  className="flex items-center gap-1.5 bg-white hover:bg-blue-50 text-blue-700 font-extrabold px-4 py-2 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                  ✨ Generate Optimal Matches
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Content Grid: Sidebar on left, Board on right */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Left Sidebar: Stats (1 col) */}
+              <div className="lg:col-span-1">
+                <StatsSidebar stats={stats} />
+              </div>
+
+              {/* Right Side: Board + Actions (3 cols) */}
+              <div className="lg:col-span-3">
+                <AssignmentBoard
+                  students={students}
+                  roles={roles}
+                  assignments={assignments}
+                  onUpdateAssignments={handleUpdateAssignments}
+                  onFinalizeRotation={handleFinalizeRotation}
+                  rotationHistoryLength={rotationHistory.length}
+                  antiRepetitionConfig={antiRepetitionConfig}
+                  onUpdateAntiRepetitionConfig={setAntiRepetitionConfig}
+                  rotationHistory={rotationHistory}
+                  showFinalizeModal={showFinalizeModal}
+                  onCloseFinalizeModal={() => setShowFinalizeModal(false)}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {activeTab === 'students' && (
@@ -401,6 +509,7 @@ export default function App() {
             students={students}
             roles={roles}
             onUpdateStudents={handleUpdateStudents}
+            rotationHistory={rotationHistory}
           />
         )}
 
@@ -418,6 +527,17 @@ export default function App() {
             roles={roles}
             assignments={assignments}
             classTitle={classTitle}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <RotationHistory
+            rotationHistory={rotationHistory}
+            onUpdateHistory={setRotationHistory}
+            antiRepetitionConfig={antiRepetitionConfig}
+            onUpdateConfig={setAntiRepetitionConfig}
+            students={students}
+            roles={roles}
           />
         )}
       </main>

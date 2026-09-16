@@ -1,4 +1,4 @@
-import { Student, Role, Assignment, MatchConfig, MatchStatistics, AssignmentWithDetails } from '../types';
+import { Student, Role, Assignment, MatchConfig, MatchStatistics, AssignmentWithDetails, RotationSnapshot, AntiRepetitionConfig } from '../types';
 
 export const DEFAULT_CONFIG: MatchConfig = {
   rankScores: {
@@ -19,6 +19,71 @@ export const DEFAULT_CONFIG: MatchConfig = {
     '-3': -45,
   },
 };
+
+// Anti-repetition constants
+export const RECENCY_PENALTIES: Record<number, number> = {
+  1: 80,   // 1 cycle ago (most recent) - heavy penalty
+  2: 40,   // 2 cycles ago - moderate
+  3: 15,   // 3 cycles ago - light
+};
+
+export const STANDBY_BOOST = 35; // +35 utility for students unassigned last cycle
+
+export const DEFAULT_ANTI_REPETITION_CONFIG: AntiRepetitionConfig = {
+  recencyWindow: 2,
+  avoidanceStrictness: 'balanced',
+  standbyPriority: true,
+};
+
+/**
+ * Calculates the history penalty for a student-role pair based on past rotations.
+ * Returns penalty in utility points (subtracted from utility).
+ * Returns Infinity for hard ban in strict mode.
+ */
+export function calculateHistoryPenalty(
+  studentId: string,
+  roleId: string,
+  history: RotationSnapshot[],
+  config: AntiRepetitionConfig
+): number {
+  if (history.length === 0) return 0;
+
+  // Get most recent rotations first, limited by recencyWindow
+  const recentRotations = history.slice(-config.recencyWindow).reverse();
+
+  let penalty = 0;
+  for (let i = 0; i < recentRotations.length; i++) {
+    const rotation = recentRotations[i];
+    const assignment = rotation.assignments.find(a => a.studentId === studentId);
+    if (assignment && assignment.roleId === roleId) {
+      const cycleAgo = i + 1;
+      if (config.avoidanceStrictness === 'strict' && cycleAgo === 1) {
+        return Infinity; // Hard ban for immediate repeat
+      }
+      penalty += RECENCY_PENALTIES[cycleAgo] ?? 0;
+    }
+  }
+  return penalty;
+}
+
+/**
+ * Calculates the standby boost for a student who was unassigned in the last rotation.
+ * Returns boost in utility points (added to utility).
+ */
+export function calculateStandbyBoost(
+  studentId: string,
+  history: RotationSnapshot[],
+  config: AntiRepetitionConfig
+): number {
+  if (!config.standbyPriority || history.length === 0) return 0;
+
+  const lastRotation = history[history.length - 1];
+  const assignment = lastRotation.assignments.find(a => a.studentId === studentId);
+  if (assignment && assignment.roleId === null) {
+    return STANDBY_BOOST;
+  }
+  return 0;
+}
 
 interface FlowEdge {
   to: number;
@@ -155,6 +220,11 @@ export function calculateStudentUtility(
   return { rank, utility };
 }
 
+interface GenerateAssignmentsOptions {
+  rotationHistory?: RotationSnapshot[];
+  antiRepetitionConfig?: AntiRepetitionConfig;
+}
+
 /**
  * Generates optimal student-to-role assignments while strictly respecting locked assignments.
  */
@@ -162,8 +232,10 @@ export function generateAssignments(
   students: Student[],
   roles: Role[],
   existingAssignments: Assignment[] = [],
-  config: MatchConfig = DEFAULT_CONFIG
+  options: GenerateAssignmentsOptions = {}
 ): Assignment[] {
+  const { rotationHistory = [], antiRepetitionConfig = DEFAULT_ANTI_REPETITION_CONFIG } = options;
+  const config: MatchConfig = DEFAULT_CONFIG; // Keep using DEFAULT_CONFIG for rank scores and adjustment weights
   const roleMap = new Map<string, Role>(roles.map((r) => [r.id, r]));
   const lockedAssignmentMap = new Map<string, Assignment>();
 
@@ -253,9 +325,17 @@ export function generateAssignments(
   // Connect each Student to each Role Slot
   const MAX_POSSIBLE_WEIGHT = 200; // ensures positive edge costs
 
+  // Small random tiebreaker to avoid deterministic assignment when utilities are equal
+  // This is much smaller than the minimum utility difference (10 points) so it only breaks exact ties
+  const TIEBREAKER_EPSILON = 0.0001;
+
   for (let i = 0; i < numStudents; i++) {
     const student = unlockedStudents[i];
     const studentNode = 1 + i;
+
+    // Calculate history penalty and standby boost for this student
+    const historyPenaltyMap = new Map<string, number>();
+    const standbyBoost = calculateStandbyBoost(student.id, rotationHistory, antiRepetitionConfig);
 
     for (let j = 0; j < numSlots; j++) {
       const slot = roleSlots[j];
@@ -263,8 +343,26 @@ export function generateAssignments(
 
       const { utility } = calculateStudentUtility(student, slot.roleId, config);
 
-      // Min-cost seeks minimum, so cost = MAX_POSSIBLE_WEIGHT - utility
-      const cost = MAX_POSSIBLE_WEIGHT - utility;
+      // Calculate history penalty for this student-role pair
+      let historyPenalty = historyPenaltyMap.get(slot.roleId);
+      if (historyPenalty === undefined) {
+        historyPenalty = calculateHistoryPenalty(student.id, slot.roleId, rotationHistory, antiRepetitionConfig);
+        historyPenaltyMap.set(slot.roleId, historyPenalty);
+      }
+
+      // If hard ban (Infinity), use a very high cost to effectively prevent assignment
+      if (historyPenalty === Infinity) {
+        mcmf.addEdge(studentNode, slotNode, 1, MAX_POSSIBLE_WEIGHT * 10, student.id, slot.roleId);
+        continue;
+      }
+
+      // Adjusted utility = base utility - history penalty + standby boost
+      const adjustedUtility = Math.max(0, utility - historyPenalty + standbyBoost);
+
+      // Min-cost seeks minimum, so cost = MAX_POSSIBLE_WEIGHT - adjustedUtility
+      // Add tiny random tiebreaker to avoid always picking the same student/role on equal utility
+      const tiebreaker = Math.random() * TIEBREAKER_EPSILON;
+      const cost = MAX_POSSIBLE_WEIGHT - adjustedUtility + tiebreaker;
       mcmf.addEdge(studentNode, slotNode, 1, cost, student.id, slot.roleId);
     }
   }
@@ -310,7 +408,7 @@ function calculateTheoreticalOptimum(
 ): number {
   // Run the matching algorithm without any locked assignments
   const unlockedAssignments = students.map((s) => ({ studentId: s.id, roleId: null, isLocked: false }));
-  const optimalAssignments = generateAssignments(students, roles, unlockedAssignments, config);
+  const optimalAssignments = generateAssignments(students, roles, unlockedAssignments, {});
 
   // Calculate utility score of this optimal assignment
   const studentMap = new Map<string, Student>(students.map((s) => [s.id, s]));
@@ -419,6 +517,7 @@ export function calculateStatistics(
 
 /**
  * Returns full details for each assignment including student name, role name, rank badge info, and utility.
+ * Includes ALL students - those without assignments will have roleId: null.
  */
 export function getDetailedAssignments(
   students: Student[],
@@ -426,37 +525,25 @@ export function getDetailedAssignments(
   assignments: Assignment[],
   config: MatchConfig = DEFAULT_CONFIG
 ): AssignmentWithDetails[] {
-  const studentMap = new Map<string, Student>(students.map((s) => [s.id, s]));
   const roleMap = new Map<string, Role>(roles.map((r) => [r.id, r]));
+  const assignmentMap = new Map<string, Assignment>(assignments.map((a) => [a.studentId, a]));
 
-  return assignments.map((assign) => {
-    const student = studentMap.get(assign.studentId);
-    const role = assign.roleId ? roleMap.get(assign.roleId) || null : null;
+  return students.map((student) => {
+    const assign = assignmentMap.get(student.id);
+    const role = assign?.roleId ? roleMap.get(assign.roleId) || null : null;
 
-    if (!student) {
-      return {
-        studentId: assign.studentId,
-        roleId: assign.roleId,
-        isLocked: assign.isLocked,
-        studentName: 'Unknown Student',
-        roleName: role ? role.name : null,
-        assignedRank: null,
-        adjustmentScore: 0,
-        utilityContribution: 0,
-      };
-    }
-
-    const { rank, utility } = calculateStudentUtility(student, assign.roleId, config);
+    const { rank, utility } = calculateStudentUtility(student, assign?.roleId ?? null, config);
 
     return {
       studentId: student.id,
-      roleId: assign.roleId,
-      isLocked: assign.isLocked,
+      roleId: assign?.roleId ?? null,
+      isLocked: assign?.isLocked ?? false,
       studentName: student.name,
       roleName: role ? role.name : null,
       assignedRank: rank,
       adjustmentScore: student.applicationScore,
       utilityContribution: utility,
+      preferences: student.preferences,
     };
   });
 }

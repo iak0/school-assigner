@@ -242,21 +242,21 @@ describe('App Core Functionality', () => {
 
       // Open settings dropdown
       const settingsBtn = screen.getByRole('button', { name: /settings/i });
-      fireEvent.click(settingsBtn);
+      await userEvent.click(settingsBtn);
 
       await waitFor(() => {
         expect(screen.getByText('Copy Share / Sync Link')).toBeInTheDocument();
       });
 
       // Click copy share link
-      fireEvent.click(screen.getByText('Copy Share / Sync Link'));
+      await userEvent.click(screen.getByText('Copy Share / Sync Link'));
 
-      // Verify clipboard was called with compressed URL
+      // Verify clipboard was called with compressed URL (wait for async operation)
       await waitFor(() => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
           expect.stringMatching(/^http:\/\/localhost:5173\/#data=/)
         );
-      });
+      }, { timeout: 1000 });
     });
   });
 
@@ -381,6 +381,150 @@ describe('App Core Functionality', () => {
       await waitFor(() => {
         const generateBtn = screen.getByRole('button', { name: /generate optimal matches/i });
         expect(generateBtn).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Rotation History Persistence', () => {
+    it('saves rotation history to localStorage when finalizing a rotation', async () => {
+      const roles: Role[] = [
+        { id: 'r1', name: 'Line Leader', capacity: 1 },
+        { id: 'r2', name: 'Door Monitor', capacity: 1 },
+      ];
+      const students: Student[] = [
+        { id: 's1', name: 'Alice', preferences: ['r1'], applicationScore: 0 },
+        { id: 's2', name: 'Bob', preferences: ['r2'], applicationScore: 0 },
+      ];
+      const assignments: Assignment[] = [
+        { studentId: 's1', roleId: 'r1', isLocked: false },
+        { studentId: 's2', roleId: 'r2', isLocked: false },
+      ];
+
+      const savedData = {
+        classTitle: 'Test Class',
+        roles,
+        students,
+        assignments,
+      };
+      localStorage.setItem('classroom_role_assigner_data_v1', JSON.stringify(savedData));
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Class')).toBeInTheDocument();
+      });
+
+      // Click Finalize Rotation button in header (the trigger) - find by text content
+      await waitFor(() => {
+        const finalizeBtn = screen.getByText('Finalize Rotation 🔒');
+        expect(finalizeBtn).toBeInTheDocument();
+      });
+
+      // There are two buttons with this text - click the first one (in header)
+      const buttons = screen.getAllByText('Finalize Rotation 🔒');
+      fireEvent.click(buttons[0]);
+
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByRole('dialog', { name: /finalize rotation/i })).toBeInTheDocument();
+      });
+
+      // Fill in rotation name and submit
+      const nameInput = screen.getByLabelText(/rotation name/i);
+      fireEvent.change(nameInput, { target: { value: 'September 2026 Jobs' } });
+
+      // Click Finalize Rotation button in modal (the submit button - second one)
+      const modalButtons = screen.getAllByText('Finalize Rotation 🔒');
+      fireEvent.click(modalButtons[1]);
+
+      // Wait for modal to close and toast to appear
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog', { name: /finalize rotation/i })).not.toBeInTheDocument();
+      });
+
+      // Wait for auto-save to complete (immediate save via saveToDisk)
+      await waitFor(() => {
+        const saved = localStorage.getItem('classroom_role_assigner_data_v1');
+        expect(saved).not.toBeNull();
+        const parsed = JSON.parse(saved!);
+        expect(parsed.rotationHistory).toBeDefined();
+        expect(parsed.rotationHistory.length).toBe(1);
+        expect(parsed.rotationHistory[0].name).toBe('September 2026 Jobs');
+        expect(parsed.rotationHistory[0].assignments).toHaveLength(2);
+      }, { timeout: 3000 });
+    });
+
+    it('persists rotation history across page reload', async () => {
+      const roles: Role[] = [
+        { id: 'r1', name: 'Line Leader', capacity: 1 },
+      ];
+      const students: Student[] = [
+        { id: 's1', name: 'Alice', preferences: ['r1'], applicationScore: 0 },
+      ];
+      const assignments: Assignment[] = [
+        { studentId: 's1', roleId: 'r1', isLocked: false },
+      ];
+
+      // Pre-populate with rotation history
+      const savedData = {
+        classTitle: 'Test Class',
+        roles,
+        students,
+        assignments,
+        rotationHistory: [
+          {
+            id: 'rot-1',
+            name: 'August 2026 Jobs',
+            createdAt: '2026-08-01T00:00:00.000Z',
+            finalizedAt: '2026-08-01T00:00:00.000Z',
+            notes: 'First rotation',
+            assignments: [
+              { studentId: 's1', roleId: 'r1', roleName: 'Line Leader', studentName: 'Alice' },
+            ],
+          },
+        ],
+        antiRepetitionConfig: {
+          recencyWindow: 2,
+          avoidanceStrictness: 'balanced',
+          standbyPriority: true,
+        },
+      };
+      localStorage.setItem('classroom_role_assigner_data_v1', JSON.stringify(savedData));
+
+      // First render - simulates initial load
+      const { unmount } = render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Class')).toBeInTheDocument();
+      });
+
+      // Navigate to History tab (named "Rotations" in UI)
+      const historyTab = screen.getByRole('button', { name: 'Rotations' });
+      fireEvent.click(historyTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('August 2026 Jobs')).toBeInTheDocument();
+        expect(screen.getByText('First rotation')).toBeInTheDocument();
+      });
+
+      // Unmount and re-render (simulates page reload)
+      unmount();
+      localStorage.setItem('classroom_role_assigner_data_v1', JSON.stringify(savedData));
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Class')).toBeInTheDocument();
+      });
+
+      // Navigate to History tab again
+      const historyTab2 = screen.getByRole('button', { name: 'Rotations' });
+      fireEvent.click(historyTab2);
+
+      // History should still be there
+      await waitFor(() => {
+        expect(screen.getByText('August 2026 Jobs')).toBeInTheDocument();
+        expect(screen.getByText('First rotation')).toBeInTheDocument();
       });
     });
   });

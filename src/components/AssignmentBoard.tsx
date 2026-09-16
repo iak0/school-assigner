@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { Student, Role, Assignment } from '../types';
+import { Student, Role, Assignment, RotationSnapshot } from '../types';
 import { getDetailedAssignments } from '../engine/matcher';
 import {
-  Lock,
-  Unlock,
-  GripVertical,
   ArrowDownToLine,
   CheckCircle2,
   Search,
 } from 'lucide-react';
+import { FinalizeRotationModal } from './FinalizeRotationModal';
+import { AntiRepetitionSettingsModal } from './AntiRepetitionSettingsModal';
+import { useStudentHistory } from '../hooks/useStudentHistory';
+import { StudentCard } from './StudentCard';
 
 interface AssignmentBoardProps {
   students: Student[];
   roles: Role[];
   assignments: Assignment[];
   onUpdateAssignments: (assignments: Assignment[]) => void;
+  onFinalizeRotation: (name: string, notes: string, clearBoard: boolean) => void;
+  rotationHistoryLength: number;
+  antiRepetitionConfig: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean };
+  onUpdateAntiRepetitionConfig: (config: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean }) => void;
+  rotationHistory?: RotationSnapshot[];
+  showFinalizeModal?: boolean;
+  onCloseFinalizeModal?: () => void;
 }
 
 interface DragPayload {
@@ -27,14 +35,24 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
   roles,
   assignments,
   onUpdateAssignments,
+  onFinalizeRotation,
+  rotationHistoryLength,
+  antiRepetitionConfig,
+  onUpdateAntiRepetitionConfig,
+  rotationHistory,
+  showFinalizeModal = false,
+  onCloseFinalizeModal,
 }) => {
   const [standbySearch, setStandbySearch] = useState('');
   const [draggedItem, setDraggedItem] = useState<DragPayload | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const detailedAssignments = getDetailedAssignments(students, roles, assignments);
   const detailedMap = new Map(detailedAssignments.map((d) => [d.studentId, d]));
   const roleMap = new Map(roles.map((r) => [r.id, r]));
+
+  const { getRecentRoleRepeat } = useStudentHistory({ rotationHistory });
 
   // Group assignments by role
   const assignmentsByRole = new Map<string, typeof detailedAssignments>();
@@ -88,7 +106,17 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
 
   const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+
+    // Prevent highlighting/dropping onto the student currently being dragged
+    if (draggedItem && targetId === `student-${draggedItem.studentId}`) {
+      if (dragOverTarget !== null) {
+        setDragOverTarget(null);
+      }
+      return;
+    }
+
     if (dragOverTarget !== targetId) {
       setDragOverTarget(targetId);
     }
@@ -260,7 +288,8 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Left Side: Roles Grid (8 or 9 cols) */}
       <div className="lg:col-span-8 xl:col-span-9 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         {roles.map((role) => {
@@ -272,10 +301,10 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
           return (
             <div
               key={role.id}
-              onDragOver={(e) => handleDragOver(e, `role-${role.id}`)}
-              onDrop={(e) => handleDropOnRoleSlot(e, role.id)}
-              className={`bg-white rounded-xl border flex flex-col justify-between ${
-                isTargetOver
+              onDragOver={!isFull ? (e) => handleDragOver(e, `role-${role.id}`) : undefined}
+              onDrop={!isFull ? (e) => handleDropOnRoleSlot(e, role.id) : undefined}
+              className={`bg-white rounded-xl border flex flex-col justify-between transition-colors ${
+                isTargetOver && !isFull
                   ? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50/50'
                   : isFull
                   ? 'border-slate-200 shadow-2xs'
@@ -309,63 +338,46 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
               <div className="p-2 space-y-1.5 flex-1">
                 {assignedList.map((assigned) => {
                   const isDraggingThis = draggedItem?.studentId === assigned.studentId;
-                  const isDragOverThis = dragOverTarget === `student-${assigned.studentId}`;
+                  const isDragOverThis = dragOverTarget === `student-${assigned.studentId}` && !isDraggingThis;
+
+                  // Calculate repeat warning for the currently assigned student in this role
+                  const currentAssignmentRepeat = getRecentRoleRepeat(assigned.studentId, role.id);
+
+                  // Calculate repeat warning for the dragged student over this role (during drag)
+                  const dragRepeat = draggedItem && isDragOverThis
+                    ? getRecentRoleRepeat(draggedItem.studentId, role.id)
+                    : { isRepeat: false, date: '' };
+
+                  // Show repeat warning for current assignment OR during drag
+                  const showRepeat = currentAssignmentRepeat.isRepeat || dragRepeat.isRepeat;
+                  const repeatDate = currentAssignmentRepeat.isRepeat ? currentAssignmentRepeat.date : dragRepeat.date;
 
                   return (
-                    <div
+                    <StudentCard
                       key={assigned.studentId}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, assigned.studentId, role.id)}
+                      studentId={assigned.studentId}
+                      studentName={assigned.studentName}
+                      adjustmentScore={assigned.adjustmentScore}
+                      assignedRank={assigned.assignedRank}
+                      roleId={role.id}
+                      isLocked={assigned.isLocked}
+                      isDragging={isDraggingThis}
+                      isDragOver={isDragOverThis}
+                      isAnyDragging={draggedItem !== null}
+                      preferences={assigned.preferences}
+                      roleMap={roleMap}
+                      getRankBadge={getRankBadge}
+                      getLetterBadge={getLetterBadge}
+                      onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOver(e, `student-${assigned.studentId}`)}
-                      onDrop={(e) => handleDropOnStudent(e, assigned.studentId, role.id)}
-                      className={`group relative rounded-lg px-2.5 py-2 border cursor-grab active:cursor-grabbing select-none ${
-                        isDraggingThis
-                          ? 'opacity-40 border-dashed border-blue-400 bg-blue-50'
-                          : isDragOverThis
-                          ? 'bg-indigo-100 border-indigo-600 ring-2 ring-indigo-400 shadow-sm'
-                          : assigned.isLocked
-                          ? 'bg-amber-50/80 border-amber-300 shadow-2xs'
-                          : 'bg-slate-50 hover:bg-slate-100/90 border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1.5 pointer-events-none">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <GripVertical className="w-3 h-3 text-slate-300 group-hover:text-slate-500 flex-shrink-0" />
-                          <span className="font-bold text-slate-800 text-xs truncate">
-                            {assigned.studentName}
-                          </span>
-                          {isDragOverThis && (
-                            <span className="text-[9px] font-bold text-indigo-800 bg-indigo-200 px-1.5 py-0.2 rounded border border-indigo-400 flex-shrink-0">
-                              🔄 Swap
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {getRankBadge(assigned.assignedRank)}
-                          {getLetterBadge(assigned.adjustmentScore)}
-
-                          {/* Lock Toggle */}
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleLock(e, assigned.studentId)}
-                            className={`p-1 rounded text-xs transition-colors pointer-events-auto ${
-                              assigned.isLocked
-                                ? 'bg-amber-200 text-amber-900 hover:bg-amber-300'
-                                : 'text-slate-300 hover:text-slate-700 hover:bg-slate-200'
-                            }`}
-                            title={assigned.isLocked ? 'Unlock assignment' : 'Lock student to this job'}
-                          >
-                            {assigned.isLocked ? (
-                              <Lock className="w-3 h-3" />
-                            ) : (
-                              <Unlock className="w-3 h-3" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                      onDragOver={handleDragOver}
+                      onDrop={handleDropOnStudent}
+                      onToggleLock={handleToggleLock}
+                      showRepeatWarning={showRepeat}
+                      repeatWarningDate={repeatDate}
+                      isStandby={false}
+                      rotationHistory={rotationHistory}
+                    />
                   );
                 })}
 
@@ -391,11 +403,11 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
       </div>
 
       {/* Right Side: Sticky Standby / Unassigned Bank (4 or 3 cols) */}
-      <div className="lg:col-span-4 xl:col-span-3 sticky top-20">
+      <div data-testid="standby-column" className="lg:col-span-4 xl:col-span-3 sticky top-20">
         <div
           onDragOver={(e) => handleDragOver(e, 'unassigned-bank')}
           onDrop={handleDropOnUnassignedBank}
-          className={`bg-white rounded-2xl border flex flex-col shadow-sm max-h-[calc(100vh-6rem)] overflow-hidden ${
+          className={`bg-white rounded-2xl border flex flex-col shadow-sm max-h-[calc(100vh-6rem)] ${
             dragOverTarget === 'unassigned-bank'
               ? 'border-rose-400 ring-4 ring-rose-200 bg-rose-50/70'
               : 'border-slate-200'
@@ -432,7 +444,7 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
           </div>
 
           {/* Standby Draggable Students List */}
-          <div className="p-2.5 space-y-1.5 overflow-y-auto flex-1 max-h-[60vh] divide-y divide-slate-100">
+          <div className="p-2.5 space-y-1.5 overflow-y-auto flex-1 max-h-[60vh] divide-y divide-slate-100" style={{ overflow: 'visible' }}>
             {unassignedStudents.length === 0 ? (
               <div className="text-center py-8 text-slate-400 text-xs flex flex-col items-center gap-1.5 pointer-events-none">
                 <CheckCircle2 className="w-6 h-6 text-emerald-500" />
@@ -446,56 +458,33 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
             ) : (
               filteredUnassigned.map((unassigned) => {
                 const isDraggingThis = draggedItem?.studentId === unassigned.studentId;
-                const isDragOverThis = dragOverTarget === `student-${unassigned.studentId}`;
+                const isDragOverThis = dragOverTarget === `student-${unassigned.studentId}` && !isDraggingThis;
                 const studentObj = students.find((s) => s.id === unassigned.studentId);
 
                 return (
-                  <div
+                  <StudentCard
                     key={unassigned.studentId}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, unassigned.studentId, null)}
+                    studentId={unassigned.studentId}
+                    studentName={unassigned.studentName}
+                    adjustmentScore={unassigned.adjustmentScore}
+                    assignedRank={null}
+                    roleId={null}
+                    isLocked={unassigned.isLocked}
+                    isDragging={isDraggingThis}
+                    isDragOver={isDragOverThis}
+                    isAnyDragging={draggedItem !== null}
+                    preferences={studentObj?.preferences ?? []}
+                    roleMap={roleMap}
+                    getRankBadge={getRankBadge}
+                    getLetterBadge={getLetterBadge}
+                    onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, `student-${unassigned.studentId}`)}
-                    onDrop={(e) => handleDropOnStudent(e, unassigned.studentId, null)}
-                    className={`group relative rounded-xl p-2 border cursor-grab active:cursor-grabbing select-none ${
-                      isDraggingThis
-                        ? 'opacity-40 border-dashed border-blue-400 bg-blue-50'
-                        : isDragOverThis
-                        ? 'bg-indigo-100 border-indigo-600 ring-2 ring-indigo-400'
-                        : 'bg-white hover:bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between pointer-events-none">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <GripVertical className="w-3 h-3 text-slate-300 group-hover:text-slate-500 flex-shrink-0" />
-                        <span className="font-bold text-slate-900 text-xs truncate">
-                          {unassigned.studentName}
-                        </span>
-                        {isDragOverThis && (
-                          <span className="text-[9px] font-bold text-indigo-800 bg-indigo-200 px-1.5 py-0.2 rounded border border-indigo-400 flex-shrink-0">
-                            🔄 Swap
-                          </span>
-                        )}
-                      </div>
-                      {getLetterBadge(unassigned.adjustmentScore)}
-                    </div>
-
-                    {/* Top 3 Choice Badges */}
-                    <div className="flex flex-wrap gap-1 mt-1 pl-4.5 pointer-events-none">
-                      {studentObj?.preferences.slice(0, 3).map((rId, idx) => {
-                        const r = roleMap.get(rId);
-                        return (
-                          <span
-                            key={rId}
-                            className="text-[9px] bg-slate-100 border border-slate-200 px-1 py-0.2 rounded text-slate-600 truncate max-w-[80px]"
-                            title={`#${idx + 1} choice: ${r?.name || rId}`}
-                          >
-                            #{idx + 1} {r?.name || rId}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
+                    onDragOver={handleDragOver}
+                    onDrop={handleDropOnStudent}
+                    onToggleLock={handleToggleLock}
+                    isStandby={true}
+                    rotationHistory={rotationHistory}
+                  />
                 );
               })
             )}
@@ -503,5 +492,32 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
         </div>
       </div>
     </div>
+
+    {/* Finalize Rotation Modal */}
+    <FinalizeRotationModal
+      isOpen={showFinalizeModal}
+      onClose={onCloseFinalizeModal ?? (() => {})}
+      onFinalize={onFinalizeRotation}
+      defaultName={getDefaultRotationName()}
+      hasAssignments={assignments.some(a => a.roleId)}
+    />
+
+    {/* Anti-Repetition Settings Modal */}
+    <AntiRepetitionSettingsModal
+      isOpen={showSettingsModal}
+      onClose={() => setShowSettingsModal(false)}
+      config={antiRepetitionConfig}
+      onUpdateConfig={onUpdateAntiRepetitionConfig}
+      rotationHistoryLength={rotationHistoryLength}
+    />
+    </>
   );
-};
+}
+
+// Helper to generate default rotation name (e.g., "October 2026 Jobs")
+function getDefaultRotationName(): string {
+  const now = new Date();
+  const monthName = now.toLocaleString('default', { month: 'long' });
+  const year = now.getFullYear();
+  return `${monthName} ${year} Jobs`;
+}

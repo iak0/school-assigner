@@ -2,6 +2,7 @@ import React from "react";
 import { Student, Role, Assignment } from "../types";
 import { getDetailedAssignments } from "../engine/matcher";
 import { Printer, Download, Copy, Check, Sparkles } from "lucide-react";
+import { copyToClipboard } from "../utils/clipboard";
 
 interface PrintPosterProps {
   students: Student[];
@@ -70,9 +71,12 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
       text += `\n📦 Standby / Reserve:\n${unassigned.map((a) => a.studentName).join(", ")}\n`;
     }
 
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(text).then((success) => {
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    });
   };
 
   return (
@@ -125,66 +129,58 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
       </div>
 
       {/* Printable Poster Area */}
-      <div className="bg-white rounded-3xl p-8 border-2 border-slate-200 shadow-md print:shadow-none print:border-none print:p-2">
+      <div className="bg-white rounded-3xl p-4 border-2 border-slate-200 shadow-md print:shadow-none print:border-none print:p-0.5 print:rounded-none">
         {/* Poster Header */}
-        <div className="text-center pb-6 border-b-2 border-slate-100 mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-bold uppercase tracking-wider mb-2 print:border print:border-amber-300">
+        <div className="text-center pb-2 border-b-2 border-slate-100 mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-bold uppercase tracking-wider mb-1 print:border print:border-amber-300">
             <Sparkles className="w-3.5 h-3.5" /> {classTitle}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
             Our Classroom Leaders & Helpers 🎒
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Working together to make our classroom a wonderful place to learn!
-          </p>
         </div>
 
         {/* Roles & Assigned Helpers Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
           {roles.map((role) => {
             const assignedList = assignmentsByRole.get(role.id) || [];
 
             return (
               <div
                 key={role.id}
-                className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/90 flex flex-col justify-between"
+                className="bg-slate-50/60 rounded-xl p-2.5 border border-slate-200/90 flex flex-col"
               >
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-3xl">{role.icon || "⭐"}</span>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-base leading-tight">
-                        {role.name}
-                      </h3>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        {role.capacity}{" "}
-                        {role.capacity === 1 ? "Helper" : "Helpers"}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{role.icon || "⭐"}</span>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-slate-900 text-sm leading-tight truncate">
+                      {role.name}
+                    </h3>
                   </div>
-
-                  {role.description && (
-                    <p className="text-xs text-slate-500 mb-3 italic">
-                      "{role.description}"
-                    </p>
-                  )}
                 </div>
 
+                {role.description && (
+                  <p className="text-[10px] text-slate-500 mb-1.5 italic whitespace-normal">
+                    "{role.description}"
+                  </p>
+                )}
+
                 {/* Assigned Names */}
-                <div className="pt-3 border-t border-slate-200/70 space-y-1.5">
+                <div className="pt-1 border-t border-slate-200/70">
                   {assignedList.length > 0 ? (
-                    assignedList.map((a) => (
-                      <div
-                        key={a.studentId}
-                        className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-between shadow-2xs"
-                      >
-                        <span>{a.studentName}</span>
-                        <span className="text-amber-500 text-xs">⭐</span>
-                      </div>
-                    ))
+                    <div className="flex flex-wrap gap-1">
+                      {assignedList.map((a) => (
+                        <span
+                          key={a.studentId}
+                          className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px] font-semibold text-slate-800 shadow-xs whitespace-nowrap"
+                        >
+                          {a.studentName}
+                        </span>
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-xs text-slate-400 italic py-1 text-center">
-                      (No helper assigned)
+                    <div className="text-[10px] text-slate-400 italic py-0.5 text-center">
+                      (Open)
                     </div>
                   )}
                 </div>
@@ -195,20 +191,19 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
 
         {/* Standby / Reserve Section */}
         {unassigned.length > 0 && (
-          <div className="mt-8 pt-6 border-t-2 border-slate-100">
-            <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-200">
-              <h3 className="font-bold text-blue-950 text-sm mb-1 flex items-center gap-1.5">
+          <div className="mt-4 pt-3 border-t-2 border-slate-100">
+            <div className="bg-blue-50/60 rounded-xl p-2.5 border border-blue-200">
+              <h3 className="font-bold text-blue-950 text-xs mb-0.5 flex items-center gap-1.5">
                 <span>🌟</span> Classroom Assistants on Reserve:
               </h3>
-              <p className="text-xs text-blue-700/80 mb-3">
-                Ready to assist with special projects, daily teamwork, and
-                upcoming role rotations:
+              <p className="text-[10px] text-blue-700/80 mb-1.5">
+                Ready to assist with special projects, daily teamwork, and upcoming role rotations:
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1">
                 {unassigned.map((a) => (
                   <span
                     key={a.studentId}
-                    className="bg-white px-3 py-1 rounded-lg border border-blue-200 text-xs font-semibold text-slate-800 shadow-2xs"
+                    className="bg-white px-1.5 py-0.4 rounded border border-blue-200 text-[9px] font-semibold text-slate-800 shadow-xs whitespace-nowrap"
                   >
                     {a.studentName}
                   </span>

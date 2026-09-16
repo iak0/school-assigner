@@ -1,13 +1,28 @@
-import React from 'react';
-import { Users, Briefcase, Target, Printer, Download, Upload, Link, PlusCircle, Settings, HardDrive, Trash2, AlertTriangle, Edit2, Check } from 'lucide-react';
+import React from "react";
+import {
+  Users,
+  Briefcase,
+  Target,
+  Printer,
+  Download,
+  Upload,
+  Link,
+  PlusCircle,
+  Settings,
+  HardDrive,
+  Trash2,
+  Edit2,
+  Check,
+  History,
+} from "lucide-react";
 
-export type ActiveTab = 'board' | 'students' | 'roles' | 'print';
+export type ActiveTab = "board" | "students" | "roles" | "print" | "history";
 
 // Inline editable class title component
-const EditableClassTitle: React.FC<{ classTitle: string; onUpdate: (title: string) => void }> = ({
-  classTitle,
-  onUpdate,
-}) => {
+const EditableClassTitle: React.FC<{
+  classTitle: string;
+  onUpdate: (title: string) => void;
+}> = ({ classTitle, onUpdate }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(classTitle);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -35,9 +50,9 @@ const EditableClassTitle: React.FC<{ classTitle: string; onUpdate: (title: strin
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSave();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setEditValue(classTitle);
       setIsEditing(false);
     }
@@ -79,7 +94,7 @@ const EditableClassTitle: React.FC<{ classTitle: string; onUpdate: (title: strin
       onClick={() => setIsEditing(true)}
       title="Click to edit class name"
     >
-      {classTitle || 'My Class'}
+      {classTitle || "My Class"}
       <Edit2 className="w-3 h-3 opacity-60 hover:opacity-100" />
     </span>
   );
@@ -123,14 +138,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setSettingsOpen(false);
       }
     };
     if (settingsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [settingsOpen]);
 
   const triggerFileImport = () => {
@@ -141,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       onImportJson(file);
-      e.target.value = '';
+      e.target.value = "";
     }
     setSettingsOpen(false);
   };
@@ -152,7 +170,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const handleClearAllData = () => {
-    if (window.confirm('⚠️ This will permanently delete ALL class data (roles, students, assignments) from this browser.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?')) {
+    if (
+      window.confirm(
+        "⚠️ This will permanently delete ALL class data (roles, students, assignments) from this browser.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?",
+      )
+    ) {
       onClearAllData();
       setSettingsOpen(false);
     }
@@ -160,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="no-print bg-white border-b border-slate-200/90 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 flex-wrap gap-4">
           {/* Logo & Title */}
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -187,11 +209,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 flex-shrink-0">
             <button
               type="button"
-              onClick={() => onSelectTab('board')}
+              onClick={() => onSelectTab("board")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'board'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                activeTab === "board"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
               <Target className="w-3.5 h-3.5" />
@@ -200,11 +222,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               type="button"
-              onClick={() => onSelectTab('students')}
+              onClick={() => onSelectTab("students")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'students'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                activeTab === "students"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -213,11 +235,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               type="button"
-              onClick={() => onSelectTab('roles')}
+              onClick={() => onSelectTab("roles")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'roles'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                activeTab === "roles"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
@@ -226,22 +248,35 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               type="button"
-              onClick={() => onSelectTab('print')}
+              onClick={() => onSelectTab("print")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'print'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                activeTab === "print"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Poster</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab("history")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "history"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Rotations</span>
             </button>
           </nav>
 
           {/* Right side: Contextual button + Settings dropdown */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Load Default Roles Button (on Roles tab when empty) */}
-            {activeTab === 'roles' && !hasRoles && (
+            {activeTab === "roles" && !hasRoles && (
               <button
                 type="button"
                 onClick={onLoadDefaultRoles}
@@ -266,7 +301,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Settings className="w-3.5 h-3.5 text-slate-500" />
                 <span className="hidden sm:inline">Settings</span>
-                <span className="inline-block transition-transform" style={{ transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <span
+                  className="inline-block transition-transform"
+                  style={{
+                    transform: settingsOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                >
                   ▼
                 </span>
               </button>
@@ -274,8 +314,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               {settingsOpen && (
                 <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50 animate-fade-in">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-900">Data & Sync</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Auto-saves to browser on every change</p>
+                    <p className="text-xs font-semibold text-slate-900">
+                      Data & Sync
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Auto-saves to browser on every change
+                    </p>
                   </div>
 
                   <button
@@ -330,7 +374,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ) : (
                       <HardDrive className="w-4 h-4 text-slate-400 flex-shrink-0" />
                     )}
-                    <span>{isSaving ? 'Saving...' : 'Save Now'}</span>
+                    <span>{isSaving ? "Saving..." : "Save Now"}</span>
                   </button>
 
                   <div className="border-t border-slate-100 my-1"></div>
@@ -341,7 +385,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     disabled={isSaving}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
                   >
-                    <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0" />
                     <Trash2 className="w-4 h-4 text-rose-500 flex-shrink-0" />
                     <span>Clear All Data (Reset)</span>
                   </button>
@@ -349,7 +392,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {lastSavedAt && (
                     <div className="px-3 py-1.5 border-t border-slate-100">
                       <p className="text-[11px] text-slate-400 text-center">
-                        Last saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        Last saved{" "}
+                        {lastSavedAt.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </p>
                     </div>
                   )}

@@ -29,6 +29,7 @@ export interface AssignmentWithDetails extends Assignment {
   assignedRank: number | null; // 1 = 1st choice, 2 = 2nd choice, ..., null = unranked or unassigned
   adjustmentScore: number;
   utilityContribution: number;
+  preferences: string[];
 }
 
 export interface MatchConfig {
@@ -66,9 +67,31 @@ export interface MatchStatistics {
   optimalityPercentage: number; // Current score / theoretical optimal score (ignoring locks & manual moves) 0-100%
 }
 
+export interface RotationSnapshot {
+  id: string;
+  name: string;
+  createdAt: string;
+  finalizedAt: string;
+  notes?: string;
+  assignments: Array<{
+    studentId: string;
+    roleId: string | null;
+    roleName: string | null;
+    studentName: string;
+  }>;
+}
+
+export interface AntiRepetitionConfig {
+  recencyWindow: number; // 1, 2, 3, or 99 (All) - default: 2
+  avoidanceStrictness: 'strict' | 'balanced'; // default: 'balanced'
+  standbyPriority: boolean; // default: true
+}
+
 export interface AppData {
   classTitle: string;
   roles: Role[];
   students: Student[];
   assignments: Assignment[];
+  rotationHistory?: RotationSnapshot[];
+  antiRepetitionConfig?: AntiRepetitionConfig;
 }
