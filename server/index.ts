@@ -76,5 +76,5 @@ app.post('/api/save', async (req, res) => {
 });
 
 app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`Classroom Role Assigner server running on http://0.0.0.0:${PORT}`);
+  console.log(`Happy Roles server running on http://0.0.0.0:${PORT}`);
 });

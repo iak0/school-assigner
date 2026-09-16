@@ -1,4 +1,13 @@
-import { Student, Role, Assignment, MatchConfig, MatchStatistics, AssignmentWithDetails, RotationSnapshot, AntiRepetitionConfig } from '../types';
+import {
+  Student,
+  Role,
+  Assignment,
+  MatchConfig,
+  MatchStatistics,
+  AssignmentWithDetails,
+  RotationSnapshot,
+  AntiRepetitionConfig,
+} from '../types';
 
 export const DEFAULT_CONFIG: MatchConfig = {
   rankScores: {
@@ -22,9 +31,9 @@ export const DEFAULT_CONFIG: MatchConfig = {
 
 // Anti-repetition constants
 export const RECENCY_PENALTIES: Record<number, number> = {
-  1: 80,   // 1 cycle ago (most recent) - heavy penalty
-  2: 40,   // 2 cycles ago - moderate
-  3: 15,   // 3 cycles ago - light
+  1: 80, // 1 cycle ago (most recent) - heavy penalty
+  2: 40, // 2 cycles ago - moderate
+  3: 15, // 3 cycles ago - light
 };
 
 export const STANDBY_BOOST = 35; // +35 utility for students unassigned last cycle
@@ -104,9 +113,30 @@ class MinCostMaxFlow {
     this.adj = Array.from({ length: n }, () => []);
   }
 
-  addEdge(from: number, to: number, cap: number, cost: number, studentId?: string, roleId?: string) {
-    const forward: FlowEdge = { to, rev: this.adj[to].length, cap, flow: 0, cost, studentId, roleId };
-    const backward: FlowEdge = { to: from, rev: this.adj[from].length, cap: 0, flow: 0, cost: -cost };
+  addEdge(
+    from: number,
+    to: number,
+    cap: number,
+    cost: number,
+    studentId?: string,
+    roleId?: string
+  ) {
+    const forward: FlowEdge = {
+      to,
+      rev: this.adj[to].length,
+      cap,
+      flow: 0,
+      cost,
+      studentId,
+      roleId,
+    };
+    const backward: FlowEdge = {
+      to: from,
+      rev: this.adj[from].length,
+      cap: 0,
+      flow: 0,
+      cost: -cost,
+    };
     this.adj[from].push(forward);
     this.adj[to].push(backward);
   }
@@ -206,13 +236,18 @@ export function calculateStudentUtility(
   const prefIndex = student.preferences.indexOf(roleId);
   const rank = prefIndex !== -1 ? prefIndex + 1 : null;
 
-  let baseScore = 0;
-  if (rank === 1) baseScore = config.rankScores[1];
-  else if (rank === 2) baseScore = config.rankScores[2];
-  else if (rank === 3) baseScore = config.rankScores[3];
-  else if (rank === 4) baseScore = config.rankScores[4];
-  else if (rank === 5) baseScore = config.rankScores[5];
-  else baseScore = config.rankScores.unranked;
+  const baseScore =
+    rank === 1
+      ? config.rankScores[1]
+      : rank === 2
+        ? config.rankScores[2]
+        : rank === 3
+          ? config.rankScores[3]
+          : rank === 4
+            ? config.rankScores[4]
+            : rank === 5
+              ? config.rankScores[5]
+              : config.rankScores.unranked;
 
   const adjustmentBonus = config.adjustmentScoreWeights[student.applicationScore] ?? 0;
   const utility = Math.max(0, baseScore + adjustmentBonus);
@@ -236,7 +271,7 @@ export function generateAssignments(
 ): Assignment[] {
   const { rotationHistory = [], antiRepetitionConfig = DEFAULT_ANTI_REPETITION_CONFIG } = options;
   const config: MatchConfig = DEFAULT_CONFIG; // Keep using DEFAULT_CONFIG for rank scores and adjustment weights
-  const roleMap = new Map<string, Role>(roles.map((r) => [r.id, r]));
+  const roleMap = new Map<string, Role>(roles.map(r => [r.id, r]));
   const lockedAssignmentMap = new Map<string, Assignment>();
 
   // Extract locked assignments
@@ -346,7 +381,12 @@ export function generateAssignments(
       // Calculate history penalty for this student-role pair
       let historyPenalty = historyPenaltyMap.get(slot.roleId);
       if (historyPenalty === undefined) {
-        historyPenalty = calculateHistoryPenalty(student.id, slot.roleId, rotationHistory, antiRepetitionConfig);
+        historyPenalty = calculateHistoryPenalty(
+          student.id,
+          slot.roleId,
+          rotationHistory,
+          antiRepetitionConfig
+        );
         historyPenaltyMap.set(slot.roleId, historyPenalty);
       }
 
@@ -407,11 +447,15 @@ function calculateTheoreticalOptimum(
   config: MatchConfig = DEFAULT_CONFIG
 ): number {
   // Run the matching algorithm without any locked assignments
-  const unlockedAssignments = students.map((s) => ({ studentId: s.id, roleId: null, isLocked: false }));
+  const unlockedAssignments = students.map(s => ({
+    studentId: s.id,
+    roleId: null,
+    isLocked: false,
+  }));
   const optimalAssignments = generateAssignments(students, roles, unlockedAssignments, {});
 
   // Calculate utility score of this optimal assignment
-  const studentMap = new Map<string, Student>(students.map((s) => [s.id, s]));
+  const studentMap = new Map<string, Student>(students.map(s => [s.id, s]));
   let totalUtility = 0;
 
   for (const assign of optimalAssignments) {
@@ -434,8 +478,8 @@ export function calculateStatistics(
   assignments: Assignment[],
   config: MatchConfig = DEFAULT_CONFIG
 ): MatchStatistics {
-  const studentMap = new Map<string, Student>(students.map((s) => [s.id, s]));
-  const roleMap = new Map<string, Role>(roles.map((r) => [r.id, r]));
+  const studentMap = new Map<string, Student>(students.map(s => [s.id, s]));
+  const roleMap = new Map<string, Role>(roles.map(r => [r.id, r]));
 
   const totalSlots = roles.reduce((sum, r) => sum + r.capacity, 0);
   let assignedCount = 0;
@@ -500,7 +544,9 @@ export function calculateStatistics(
   // Theoretical optimal score: best possible outcome without locks/manual overrides
   const theoreticalOptimalScore = calculateTheoreticalOptimum(students, roles, config);
   const optimalityPercentage =
-    theoreticalOptimalScore > 0 ? Math.min(100, Math.round((rawUtilityScore / theoreticalOptimalScore) * 100)) : 0;
+    theoreticalOptimalScore > 0
+      ? Math.min(100, Math.round((rawUtilityScore / theoreticalOptimalScore) * 100))
+      : 0;
 
   return {
     totalStudents: students.length,
@@ -525,10 +571,10 @@ export function getDetailedAssignments(
   assignments: Assignment[],
   config: MatchConfig = DEFAULT_CONFIG
 ): AssignmentWithDetails[] {
-  const roleMap = new Map<string, Role>(roles.map((r) => [r.id, r]));
-  const assignmentMap = new Map<string, Assignment>(assignments.map((a) => [a.studentId, a]));
+  const roleMap = new Map<string, Role>(roles.map(r => [r.id, r]));
+  const assignmentMap = new Map<string, Assignment>(assignments.map(a => [a.studentId, a]));
 
-  return students.map((student) => {
+  return students.map(student => {
     const assign = assignmentMap.get(student.id);
     const role = assign?.roleId ? roleMap.get(assign.roleId) || null : null;
 

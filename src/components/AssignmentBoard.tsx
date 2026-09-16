@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Student, Role, Assignment, RotationSnapshot } from '../types';
 import { getDetailedAssignments } from '../engine/matcher';
-import {
-  ArrowDownToLine,
-  CheckCircle2,
-  Search,
-} from 'lucide-react';
+import { ArrowDownToLine, CheckCircle2, Search } from 'lucide-react';
 import { FinalizeRotationModal } from './FinalizeRotationModal';
 import { AntiRepetitionSettingsModal } from './AntiRepetitionSettingsModal';
 import { useStudentHistory } from '../hooks/useStudentHistory';
@@ -18,8 +14,16 @@ interface AssignmentBoardProps {
   onUpdateAssignments: (assignments: Assignment[]) => void;
   onFinalizeRotation: (name: string, notes: string, clearBoard: boolean) => void;
   rotationHistoryLength: number;
-  antiRepetitionConfig: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean };
-  onUpdateAntiRepetitionConfig: (config: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean }) => void;
+  antiRepetitionConfig: {
+    recencyWindow: number;
+    avoidanceStrictness: 'strict' | 'balanced';
+    standbyPriority: boolean;
+  };
+  onUpdateAntiRepetitionConfig: (config: {
+    recencyWindow: number;
+    avoidanceStrictness: 'strict' | 'balanced';
+    standbyPriority: boolean;
+  }) => void;
   rotationHistory?: RotationSnapshot[];
   showFinalizeModal?: boolean;
   onCloseFinalizeModal?: () => void;
@@ -49,8 +53,8 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const detailedAssignments = getDetailedAssignments(students, roles, assignments);
-  const detailedMap = new Map(detailedAssignments.map((d) => [d.studentId, d]));
-  const roleMap = new Map(roles.map((r) => [r.id, r]));
+  const detailedMap = new Map(detailedAssignments.map(d => [d.studentId, d]));
+  const roleMap = new Map(roles.map(r => [r.id, r]));
 
   const { getRecentRoleRepeat } = useStudentHistory({ rotationHistory });
 
@@ -70,17 +74,17 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
     }
   }
 
-  const filteredUnassigned = unassignedStudents.filter((s) =>
+  const filteredUnassigned = unassignedStudents.filter(s =>
     s.studentName.toLowerCase().includes(standbySearch.toLowerCase())
   );
 
   // Toggle Lock
   const handleToggleLock = (e: React.MouseEvent, studentId: string) => {
     e.stopPropagation();
-    const updated = assignments.map((a) =>
+    const updated = assignments.map(a =>
       a.studentId === studentId ? { ...a, isLocked: !a.isLocked } : a
     );
-    if (!updated.some((a) => a.studentId === studentId)) {
+    if (!updated.some(a => a.studentId === studentId)) {
       const cur = detailedMap.get(studentId);
       updated.push({
         studentId,
@@ -147,10 +151,10 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
     const sourceRoleId = payload.sourceRoleId;
 
     // SWAP: sourceStudent gets targetRoleId, targetStudent gets sourceRoleId
-    let updated = [...assignments];
+    const updated = [...assignments];
 
-    const sourceIdx = updated.findIndex((a) => a.studentId === sourceStudentId);
-    const targetIdx = updated.findIndex((a) => a.studentId === targetStudentId);
+    const sourceIdx = updated.findIndex(a => a.studentId === sourceStudentId);
+    const targetIdx = updated.findIndex(a => a.studentId === targetStudentId);
 
     if (sourceIdx >= 0) {
       updated[sourceIdx] = { ...updated[sourceIdx], roleId: targetRoleId };
@@ -185,8 +189,8 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
     if (!payload) return;
 
     const sourceStudentId = payload.studentId;
-    let updated = [...assignments];
-    const sourceIdx = updated.findIndex((a) => a.studentId === sourceStudentId);
+    const updated = [...assignments];
+    const sourceIdx = updated.findIndex(a => a.studentId === sourceStudentId);
 
     if (sourceIdx >= 0) {
       updated[sourceIdx] = { ...updated[sourceIdx], roleId: targetRoleId };
@@ -215,8 +219,8 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
     if (!payload || payload.sourceRoleId === null) return;
 
     const sourceStudentId = payload.studentId;
-    let updated = [...assignments];
-    const sourceIdx = updated.findIndex((a) => a.studentId === sourceStudentId);
+    const updated = [...assignments];
+    const sourceIdx = updated.findIndex(a => a.studentId === sourceStudentId);
 
     if (sourceIdx >= 0) {
       updated[sourceIdx] = { ...updated[sourceIdx], roleId: null };
@@ -290,81 +294,203 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-      {/* Left Side: Roles Grid (8 or 9 cols) */}
-      <div className="lg:col-span-8 xl:col-span-9 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        {roles.map((role) => {
-          const assignedList = assignmentsByRole.get(role.id) || [];
-          const emptySlotsCount = Math.max(0, role.capacity - assignedList.length);
-          const isFull = assignedList.length >= role.capacity;
-          const isTargetOver = dragOverTarget === `role-${role.id}`;
+        {/* Left Side: Roles Grid (8 or 9 cols) */}
+        <div className="lg:col-span-8 xl:col-span-9 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {roles.map(role => {
+            const assignedList = assignmentsByRole.get(role.id) || [];
+            const emptySlotsCount = Math.max(0, role.capacity - assignedList.length);
+            const isFull = assignedList.length >= role.capacity;
+            const isTargetOver = dragOverTarget === `role-${role.id}`;
 
-          return (
-            <div
-              key={role.id}
-              onDragOver={!isFull ? (e) => handleDragOver(e, `role-${role.id}`) : undefined}
-              onDrop={!isFull ? (e) => handleDropOnRoleSlot(e, role.id) : undefined}
-              className={`bg-white rounded-xl border flex flex-col justify-between transition-colors ${
-                isTargetOver && !isFull
-                  ? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50/50'
-                  : isFull
-                  ? 'border-slate-200 shadow-2xs'
-                  : 'border-dashed border-amber-300 bg-amber-50/10'
-              }`}
-            >
-              {/* Role Card Header */}
-              <div className="px-3.5 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-t-xl pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{role.icon || '⭐'}</span>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-xs leading-tight">{role.name}</h3>
-                    <span className="text-[10px] text-slate-400">
-                      {role.capacity} {role.capacity === 1 ? 'Slot' : 'Slots'}
-                    </span>
+            return (
+              <div
+                key={role.id}
+                onDragOver={!isFull ? e => handleDragOver(e, `role-${role.id}`) : undefined}
+                onDrop={!isFull ? e => handleDropOnRoleSlot(e, role.id) : undefined}
+                className={`bg-white rounded-xl border flex flex-col justify-between transition-colors ${
+                  isTargetOver && !isFull
+                    ? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50/50'
+                    : isFull
+                      ? 'border-slate-200 shadow-2xs'
+                      : 'border-dashed border-amber-300 bg-amber-50/10'
+                }`}
+              >
+                {/* Role Card Header */}
+                <div className="px-3.5 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-t-xl pointer-events-none">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{role.icon || '⭐'}</span>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-xs leading-tight">
+                        {role.name}
+                      </h3>
+                      <span className="text-[10px] text-slate-400">
+                        {role.capacity} {role.capacity === 1 ? 'Slot' : 'Slots'}
+                      </span>
+                    </div>
                   </div>
+
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      isFull
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        : 'bg-amber-100 text-amber-800 border-amber-200'
+                    }`}
+                  >
+                    {assignedList.length}/{role.capacity}
+                  </span>
                 </div>
 
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    isFull
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      : 'bg-amber-100 text-amber-800 border-amber-200'
-                  }`}
-                >
-                  {assignedList.length}/{role.capacity}
-                </span>
+                {/* Assigned Student Slots */}
+                <div className="p-2 space-y-1.5 flex-1">
+                  {assignedList.map(assigned => {
+                    const isDraggingThis = draggedItem?.studentId === assigned.studentId;
+                    const isDragOverThis =
+                      dragOverTarget === `student-${assigned.studentId}` && !isDraggingThis;
+
+                    // Calculate repeat warning for the currently assigned student in this role
+                    const currentAssignmentRepeat = getRecentRoleRepeat(
+                      assigned.studentId,
+                      role.id
+                    );
+
+                    // Calculate repeat warning for the dragged student over this role (during drag)
+                    const dragRepeat =
+                      draggedItem && isDragOverThis
+                        ? getRecentRoleRepeat(draggedItem.studentId, role.id)
+                        : { isRepeat: false, date: '' };
+
+                    // Show repeat warning for current assignment OR during drag
+                    const showRepeat = currentAssignmentRepeat.isRepeat || dragRepeat.isRepeat;
+                    const repeatDate = currentAssignmentRepeat.isRepeat
+                      ? currentAssignmentRepeat.date
+                      : dragRepeat.date;
+
+                    return (
+                      <StudentCard
+                        key={assigned.studentId}
+                        studentId={assigned.studentId}
+                        studentName={assigned.studentName}
+                        adjustmentScore={assigned.adjustmentScore}
+                        assignedRank={assigned.assignedRank}
+                        roleId={role.id}
+                        isLocked={assigned.isLocked}
+                        isDragging={isDraggingThis}
+                        isDragOver={isDragOverThis}
+                        isAnyDragging={draggedItem !== null}
+                        preferences={assigned.preferences}
+                        roleMap={roleMap}
+                        getRankBadge={getRankBadge}
+                        getLetterBadge={getLetterBadge}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDropOnStudent}
+                        onToggleLock={handleToggleLock}
+                        showRepeatWarning={showRepeat}
+                        repeatWarningDate={repeatDate}
+                        isStandby={false}
+                        rotationHistory={rotationHistory}
+                      />
+                    );
+                  })}
+
+                  {/* Empty Slots Droppable Indicators */}
+                  {Array.from({ length: emptySlotsCount }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      onDragOver={e => handleDragOver(e, `slot-${role.id}-${idx}`)}
+                      onDrop={e => handleDropOnRoleSlot(e, role.id)}
+                      className={`border-2 border-dashed rounded-lg py-2 text-center text-[11px] font-medium ${
+                        dragOverTarget === `slot-${role.id}-${idx}`
+                          ? 'border-blue-500 bg-blue-100 text-blue-700 ring-2 ring-blue-300'
+                          : 'border-slate-200 text-slate-400 hover:border-slate-300 bg-slate-50/40'
+                      }`}
+                    >
+                      ➕ Drop student here
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Side: Sticky Standby / Unassigned Bank (4 or 3 cols) */}
+        <div data-testid="standby-column" className="lg:col-span-4 xl:col-span-3 sticky top-20">
+          <div
+            onDragOver={e => handleDragOver(e, 'unassigned-bank')}
+            onDrop={handleDropOnUnassignedBank}
+            className={`bg-white rounded-2xl border flex flex-col shadow-sm max-h-[calc(100vh-6rem)] ${
+              dragOverTarget === 'unassigned-bank'
+                ? 'border-rose-400 ring-4 ring-rose-200 bg-rose-50/70'
+                : 'border-slate-200'
+            }`}
+          >
+            {/* Standby Header & Drop Target */}
+            <div className="p-3.5 bg-slate-50 border-b border-slate-200 pointer-events-none">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-lg">🎒</span>
+                <h3 className="font-bold text-slate-800 text-xs">
+                  Standby Reserve ({unassignedStudents.length})
+                </h3>
               </div>
 
-              {/* Assigned Student Slots */}
-              <div className="p-2 space-y-1.5 flex-1">
-                {assignedList.map((assigned) => {
-                  const isDraggingThis = draggedItem?.studentId === assigned.studentId;
-                  const isDragOverThis = dragOverTarget === `student-${assigned.studentId}` && !isDraggingThis;
+              {/* Drag Here to Unassign Banner */}
+              {draggedItem && draggedItem.sourceRoleId !== null && (
+                <div className="bg-rose-100 text-rose-800 text-[11px] font-bold p-2 rounded-xl border border-rose-300 text-center flex items-center justify-center gap-1.5 mb-2">
+                  <ArrowDownToLine className="w-3.5 h-3.5" />
+                  Drop here to unassign
+                </div>
+              )}
 
-                  // Calculate repeat warning for the currently assigned student in this role
-                  const currentAssignmentRepeat = getRecentRoleRepeat(assigned.studentId, role.id);
+              {/* Search Box */}
+              <div className="relative pointer-events-auto">
+                <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter standby..."
+                  value={standbySearch}
+                  onChange={e => setStandbySearch(e.target.value)}
+                  className="w-full pl-7 pr-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
 
-                  // Calculate repeat warning for the dragged student over this role (during drag)
-                  const dragRepeat = draggedItem && isDragOverThis
-                    ? getRecentRoleRepeat(draggedItem.studentId, role.id)
-                    : { isRepeat: false, date: '' };
-
-                  // Show repeat warning for current assignment OR during drag
-                  const showRepeat = currentAssignmentRepeat.isRepeat || dragRepeat.isRepeat;
-                  const repeatDate = currentAssignmentRepeat.isRepeat ? currentAssignmentRepeat.date : dragRepeat.date;
+            {/* Standby Draggable Students List */}
+            <div
+              className="p-2.5 space-y-1.5 overflow-y-auto flex-1 max-h-[60vh] divide-y divide-slate-100"
+              style={{ overflow: 'visible' }}
+            >
+              {unassignedStudents.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-xs flex flex-col items-center gap-1.5 pointer-events-none">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                  <span className="font-semibold text-slate-700">All students assigned!</span>
+                  <span className="text-[11px]">Drag any student here to unassign them.</span>
+                </div>
+              ) : filteredUnassigned.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs pointer-events-none">
+                  No standby students match "{standbySearch}"
+                </div>
+              ) : (
+                filteredUnassigned.map(unassigned => {
+                  const isDraggingThis = draggedItem?.studentId === unassigned.studentId;
+                  const isDragOverThis =
+                    dragOverTarget === `student-${unassigned.studentId}` && !isDraggingThis;
+                  const studentObj = students.find(s => s.id === unassigned.studentId);
 
                   return (
                     <StudentCard
-                      key={assigned.studentId}
-                      studentId={assigned.studentId}
-                      studentName={assigned.studentName}
-                      adjustmentScore={assigned.adjustmentScore}
-                      assignedRank={assigned.assignedRank}
-                      roleId={role.id}
-                      isLocked={assigned.isLocked}
+                      key={unassigned.studentId}
+                      studentId={unassigned.studentId}
+                      studentName={unassigned.studentName}
+                      adjustmentScore={unassigned.adjustmentScore}
+                      assignedRank={null}
+                      roleId={null}
+                      isLocked={unassigned.isLocked}
                       isDragging={isDraggingThis}
                       isDragOver={isDragOverThis}
                       isAnyDragging={draggedItem !== null}
-                      preferences={assigned.preferences}
+                      preferences={studentObj?.preferences ?? []}
                       roleMap={roleMap}
                       getRankBadge={getRankBadge}
                       getLetterBadge={getLetterBadge}
@@ -373,146 +499,37 @@ export const AssignmentBoard: React.FC<AssignmentBoardProps> = ({
                       onDragOver={handleDragOver}
                       onDrop={handleDropOnStudent}
                       onToggleLock={handleToggleLock}
-                      showRepeatWarning={showRepeat}
-                      repeatWarningDate={repeatDate}
-                      isStandby={false}
+                      isStandby={true}
                       rotationHistory={rotationHistory}
                     />
                   );
-                })}
-
-                {/* Empty Slots Droppable Indicators */}
-                {Array.from({ length: emptySlotsCount }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    onDragOver={(e) => handleDragOver(e, `slot-${role.id}-${idx}`)}
-                    onDrop={(e) => handleDropOnRoleSlot(e, role.id)}
-                    className={`border-2 border-dashed rounded-lg py-2 text-center text-[11px] font-medium ${
-                      dragOverTarget === `slot-${role.id}-${idx}`
-                        ? 'border-blue-500 bg-blue-100 text-blue-700 ring-2 ring-blue-300'
-                        : 'border-slate-200 text-slate-400 hover:border-slate-300 bg-slate-50/40'
-                    }`}
-                  >
-                    ➕ Drop student here
-                  </div>
-                ))}
-              </div>
+                })
+              )}
             </div>
-          );
-        })}
-      </div>
-
-      {/* Right Side: Sticky Standby / Unassigned Bank (4 or 3 cols) */}
-      <div data-testid="standby-column" className="lg:col-span-4 xl:col-span-3 sticky top-20">
-        <div
-          onDragOver={(e) => handleDragOver(e, 'unassigned-bank')}
-          onDrop={handleDropOnUnassignedBank}
-          className={`bg-white rounded-2xl border flex flex-col shadow-sm max-h-[calc(100vh-6rem)] ${
-            dragOverTarget === 'unassigned-bank'
-              ? 'border-rose-400 ring-4 ring-rose-200 bg-rose-50/70'
-              : 'border-slate-200'
-          }`}
-        >
-          {/* Standby Header & Drop Target */}
-          <div className="p-3.5 bg-slate-50 border-b border-slate-200 pointer-events-none">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-lg">🎒</span>
-              <h3 className="font-bold text-slate-800 text-xs">
-                Standby Reserve ({unassignedStudents.length})
-              </h3>
-            </div>
-
-            {/* Drag Here to Unassign Banner */}
-            {draggedItem && draggedItem.sourceRoleId !== null && (
-              <div className="bg-rose-100 text-rose-800 text-[11px] font-bold p-2 rounded-xl border border-rose-300 text-center flex items-center justify-center gap-1.5 mb-2">
-                <ArrowDownToLine className="w-3.5 h-3.5" />
-                Drop here to unassign
-              </div>
-            )}
-
-            {/* Search Box */}
-            <div className="relative pointer-events-auto">
-              <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Filter standby..."
-                value={standbySearch}
-                onChange={(e) => setStandbySearch(e.target.value)}
-                className="w-full pl-7 pr-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Standby Draggable Students List */}
-          <div className="p-2.5 space-y-1.5 overflow-y-auto flex-1 max-h-[60vh] divide-y divide-slate-100" style={{ overflow: 'visible' }}>
-            {unassignedStudents.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs flex flex-col items-center gap-1.5 pointer-events-none">
-                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                <span className="font-semibold text-slate-700">All students assigned!</span>
-                <span className="text-[11px]">Drag any student here to unassign them.</span>
-              </div>
-            ) : filteredUnassigned.length === 0 ? (
-              <div className="text-center py-6 text-slate-400 text-xs pointer-events-none">
-                No standby students match "{standbySearch}"
-              </div>
-            ) : (
-              filteredUnassigned.map((unassigned) => {
-                const isDraggingThis = draggedItem?.studentId === unassigned.studentId;
-                const isDragOverThis = dragOverTarget === `student-${unassigned.studentId}` && !isDraggingThis;
-                const studentObj = students.find((s) => s.id === unassigned.studentId);
-
-                return (
-                  <StudentCard
-                    key={unassigned.studentId}
-                    studentId={unassigned.studentId}
-                    studentName={unassigned.studentName}
-                    adjustmentScore={unassigned.adjustmentScore}
-                    assignedRank={null}
-                    roleId={null}
-                    isLocked={unassigned.isLocked}
-                    isDragging={isDraggingThis}
-                    isDragOver={isDragOverThis}
-                    isAnyDragging={draggedItem !== null}
-                    preferences={studentObj?.preferences ?? []}
-                    roleMap={roleMap}
-                    getRankBadge={getRankBadge}
-                    getLetterBadge={getLetterBadge}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDropOnStudent}
-                    onToggleLock={handleToggleLock}
-                    isStandby={true}
-                    rotationHistory={rotationHistory}
-                  />
-                );
-              })
-            )}
           </div>
         </div>
       </div>
-    </div>
 
-    {/* Finalize Rotation Modal */}
-    <FinalizeRotationModal
-      isOpen={showFinalizeModal}
-      onClose={onCloseFinalizeModal ?? (() => {})}
-      onFinalize={onFinalizeRotation}
-      defaultName={getDefaultRotationName()}
-      hasAssignments={assignments.some(a => a.roleId)}
-    />
+      {/* Finalize Rotation Modal */}
+      <FinalizeRotationModal
+        isOpen={showFinalizeModal}
+        onClose={onCloseFinalizeModal ?? (() => {})}
+        onFinalize={onFinalizeRotation}
+        defaultName={getDefaultRotationName()}
+        hasAssignments={assignments.some(a => a.roleId)}
+      />
 
-    {/* Anti-Repetition Settings Modal */}
-    <AntiRepetitionSettingsModal
-      isOpen={showSettingsModal}
-      onClose={() => setShowSettingsModal(false)}
-      config={antiRepetitionConfig}
-      onUpdateConfig={onUpdateAntiRepetitionConfig}
-      rotationHistoryLength={rotationHistoryLength}
-    />
+      {/* Anti-Repetition Settings Modal */}
+      <AntiRepetitionSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        config={antiRepetitionConfig}
+        onUpdateConfig={onUpdateAntiRepetitionConfig}
+        rotationHistoryLength={rotationHistoryLength}
+      />
     </>
   );
-}
+};
 
 // Helper to generate default rotation name (e.g., "October 2026 Jobs")
 function getDefaultRotationName(): string {

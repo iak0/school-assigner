@@ -5,8 +5,16 @@ import { Trash2, ChevronDown, ChevronUp, Table, List, Search, RotateCcw } from '
 interface RotationHistoryProps {
   rotationHistory: RotationSnapshot[];
   onUpdateHistory: (history: RotationSnapshot[]) => void;
-  antiRepetitionConfig: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean };
-  onUpdateConfig: (config: { recencyWindow: number; avoidanceStrictness: 'strict' | 'balanced'; standbyPriority: boolean }) => void;
+  antiRepetitionConfig: {
+    recencyWindow: number;
+    avoidanceStrictness: 'strict' | 'balanced';
+    standbyPriority: boolean;
+  };
+  onUpdateConfig: (config: {
+    recencyWindow: number;
+    avoidanceStrictness: 'strict' | 'balanced';
+    standbyPriority: boolean;
+  }) => void;
   students: Student[];
   roles: Role[];
 }
@@ -30,7 +38,11 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
   };
 
   const handleClearAllHistory = () => {
-    if (window.confirm('⚠️ This will permanently delete ALL rotation history.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?')) {
+    if (
+      window.confirm(
+        '⚠️ This will permanently delete ALL rotation history.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?'
+      )
+    ) {
       onUpdateHistory([]);
     }
   };
@@ -46,7 +58,8 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
       filled: assigned.length,
       total: totalSlots,
       firstChoice: firstChoiceCount,
-      firstChoicePercent: assigned.length > 0 ? Math.round((firstChoiceCount / assigned.length) * 100) : 0,
+      firstChoicePercent:
+        assigned.length > 0 ? Math.round((firstChoiceCount / assigned.length) * 100) : 0,
     };
   };
 
@@ -62,8 +75,8 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
           <RotateCcw className="w-16 h-16 mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-bold text-slate-800 mb-2">No Rotation History Yet</h3>
           <p className="text-slate-500 text-sm max-w-md mx-auto">
-            Finalize a rotation from the Matching Board to create your first history snapshot.
-            This enables anti-repetition and standby fairness for future rotations.
+            Finalize a rotation from the Matching Board to create your first history snapshot. This
+            enables anti-repetition and standby fairness for future rotations.
           </p>
         </div>
       </div>
@@ -71,13 +84,14 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
   }
 
   // Sort rotations newest first
-  const sortedRotations = [...rotationHistory].sort((a, b) =>
-    new Date(b.finalizedAt).getTime() - new Date(a.finalizedAt).getTime()
+  const sortedRotations = [...rotationHistory].sort(
+    (a, b) => new Date(b.finalizedAt).getTime() - new Date(a.finalizedAt).getTime()
   );
 
-  const filteredRotations = sortedRotations.filter(r =>
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRotations = sortedRotations.filter(
+    r =>
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -87,7 +101,8 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-slate-900">📜 Rotations & History</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            View past assignments, audit student job history, and configure anti-repetition settings.
+            View past assignments, audit student job history, and configure anti-repetition
+            settings.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -166,7 +181,9 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
                     </button>
                     <div>
                       <h3 className="font-bold text-slate-900 text-lg">{rotation.name}</h3>
-                      <p className="text-sm text-slate-500">Finalized {formatDate(rotation.finalizedAt)}</p>
+                      <p className="text-sm text-slate-500">
+                        Finalized {formatDate(rotation.finalizedAt)}
+                      </p>
                     </div>
                   </div>
 
@@ -209,10 +226,15 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
                         .map(assignment => {
                           const role = roleMap.get(assignment.roleId || '');
                           return (
-                            <div key={`${assignment.studentId}-${assignment.roleId}`} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                            <div
+                              key={`${assignment.studentId}-${assignment.roleId}`}
+                              className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200"
+                            >
                               <span className="text-lg">{role?.icon || '⭐'}</span>
                               <div className="min-w-0 flex-1">
-                                <p className="font-medium text-slate-800 text-sm truncate">{role?.name || assignment.roleName}</p>
+                                <p className="font-medium text-slate-800 text-sm truncate">
+                                  {role?.name || assignment.roleName}
+                                </p>
                                 <p className="text-xs text-slate-500">{assignment.studentName}</p>
                               </div>
                             </div>
@@ -221,7 +243,10 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
                       {rotation.assignments
                         .filter(a => !a.roleId)
                         .map(assignment => (
-                          <div key={assignment.studentId} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200 col-span-full sm:col-span-1">
+                          <div
+                            key={assignment.studentId}
+                            className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200 col-span-full sm:col-span-1"
+                          >
                             <span className="text-lg">🎒</span>
                             <div>
                               <p className="font-medium text-blue-900 text-sm">Standby / Reserve</p>
@@ -237,9 +262,7 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
           })}
 
           {filteredRotations.length === 0 && rotationHistory.length > 0 && (
-            <div className="text-center py-8 text-slate-500">
-              No rotations match "{searchTerm}"
-            </div>
+            <div className="text-center py-8 text-slate-500">No rotations match "{searchTerm}"</div>
           )}
         </div>
       )}
@@ -259,7 +282,9 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
                       className="px-3 py-2 text-left font-bold text-slate-700 bg-white border-r border-slate-200 whitespace-nowrap min-w-[140px]"
                     >
                       <div className="font-semibold">{rotation.name}</div>
-                      <div className="text-xs text-slate-500">{formatDate(rotation.finalizedAt)}</div>
+                      <div className="text-xs text-slate-500">
+                        {formatDate(rotation.finalizedAt)}
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -293,7 +318,8 @@ export const RotationHistory: React.FC<RotationHistoryProps> = ({
           <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
             <span className="font-medium text-slate-700">Legend:</span>{' '}
             <span className="inline-flex items-center gap-1 ml-2">
-              <span className="w-3 h-3 rounded bg-blue-100 border border-blue-300" /> Standby/Reserve
+              <span className="w-3 h-3 rounded bg-blue-100 border border-blue-300" />{' '}
+              Standby/Reserve
             </span>
             <span className="ml-4">— = Not assigned / Not in class</span>
           </div>

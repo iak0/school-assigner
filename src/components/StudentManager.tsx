@@ -12,7 +12,12 @@ interface StudentManagerProps {
   rotationHistory?: RotationSnapshot[];
 }
 
-export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles, onUpdateStudents, rotationHistory = [] }) => {
+export const StudentManager: React.FC<StudentManagerProps> = ({
+  students,
+  roles,
+  onUpdateStudents,
+  rotationHistory = [],
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -22,7 +27,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
   const { getStudentHistory } = useStudentHistory({ rotationHistory });
   const editingRowRef = React.useRef<HTMLTableRowElement>(null);
 
-  const filteredStudents = students.filter((s) =>
+  const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -48,12 +53,10 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
     notes: string;
   }) => {
     // Filter out empty preferences and duplicates
-    const preferences = data.preferences.filter(
-      (p, idx, self) => p && self.indexOf(p) === idx
-    );
+    const preferences = data.preferences.filter((p, idx, self) => p && self.indexOf(p) === idx);
 
     if (editingStudentId) {
-      const updated = students.map((s) =>
+      const updated = students.map(s =>
         s.id === editingStudentId
           ? {
               ...s,
@@ -81,22 +84,25 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
 
   const handleDeleteStudent = (id: string) => {
     if (window.confirm('Are you sure you want to remove this student?')) {
-      onUpdateStudents(students.filter((s) => s.id !== id));
+      onUpdateStudents(students.filter(s => s.id !== id));
     }
   };
 
   const handleQuickScoreChange = (id: string, score: number) => {
-    const updated = students.map((s) => (s.id === id ? { ...s, applicationScore: score } : s));
+    const updated = students.map(s => (s.id === id ? { ...s, applicationScore: score } : s));
     onUpdateStudents(updated);
   };
 
   const handleBulkImport = () => {
-    const lines = bulkText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = bulkText
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean);
     if (lines.length === 0) return;
 
     const newStudents: Student[] = lines.map((line, idx) => {
       // Split by comma or tab
-      const parts = line.split(/[,\t]+/).map((p) => p.trim());
+      const parts = line.split(/[,\t]+/).map(p => p.trim());
       const studentName = parts[0] || `Student ${idx + 1}`;
 
       return {
@@ -112,7 +118,6 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
     setBulkText('');
   };
 
-
   return (
     <div className="space-y-6">
       {/* Top Controls Bar */}
@@ -123,7 +128,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
             <h2 className="text-xl font-bold text-slate-800">Students & Preferences</h2>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Manage your class roster ({students.length} students), rank their top 5 job choices, and set teacher adjustments.
+            Manage your class roster ({students.length} students), rank their top 5 job choices, and
+            set teacher adjustments.
           </p>
         </div>
 
@@ -134,7 +140,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
               type="text"
               placeholder="Search student..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none w-48"
             />
           </div>
@@ -166,18 +172,22 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                 <Upload className="w-5 h-5 text-blue-600" />
                 Quick Import Student Roster
               </h3>
-              <button onClick={() => setIsBulkImportOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setIsBulkImportOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <p className="text-xs text-slate-500 mb-3">
-              Paste student names (one name per line). Students will be added with neutral adjustments and empty preferences.
+              Paste student names (one name per line). Students will be added with neutral
+              adjustments and empty preferences.
             </p>
             <textarea
               rows={8}
               placeholder="Emma Watson&#10;Liam Johnson&#10;Sophia Brown&#10;Noah Davis..."
               value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
+              onChange={e => setBulkText(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4"
             />
             <div className="flex justify-end gap-2">
@@ -236,9 +246,11 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((student) => (
+                filteredStudents.map(student => (
                   <React.Fragment key={student.id}>
-                    <tr className={`hover:bg-slate-50/70 transition-colors ${editingStudentId === student.id ? 'bg-blue-50/50' : ''}`}>
+                    <tr
+                      className={`hover:bg-slate-50/70 transition-colors ${editingStudentId === student.id ? 'bg-blue-50/50' : ''}`}
+                    >
                       {/* Student Name */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-900 text-sm">{student.name}</div>
@@ -249,10 +261,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
 
                       {/* Preferences Pills */}
                       <td className="py-3.5 px-4">
-                        <PreferenceList
-                          preferences={student.preferences}
-                          roles={roles}
-                        />
+                        <PreferenceList preferences={student.preferences} roles={roles} />
                       </td>
 
                       {/* Job History */}
@@ -261,7 +270,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                           const history = getStudentHistory(student.id);
                           if (history.length === 0) {
                             return (
-                              <div className="text-slate-300 text-[11px] italic">No history yet</div>
+                              <div className="text-slate-300 text-[11px] italic">
+                                No history yet
+                              </div>
                             );
                           }
                           return (
@@ -292,13 +303,15 @@ export const StudentManager: React.FC<StudentManagerProps> = ({ students, roles,
                         <div className="inline-flex items-center gap-1">
                           <select
                             value={student.applicationScore}
-                            onChange={(e) => handleQuickScoreChange(student.id, parseInt(e.target.value))}
+                            onChange={e =>
+                              handleQuickScoreChange(student.id, parseInt(e.target.value))
+                            }
                             className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                               student.applicationScore > 0
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                 : student.applicationScore < 0
-                                ? 'bg-rose-50 text-rose-800 border-rose-300'
-                                : 'bg-slate-50 text-slate-700 border-slate-300'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                  : 'bg-slate-50 text-slate-700 border-slate-300'
                             }`}
                           >
                             <option value={3}>+3</option>

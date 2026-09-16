@@ -1,6 +1,6 @@
-import React from "react";
-import { Role } from "../types";
-import { getRankColorConfig } from "../utils/rankColors";
+import React from 'react';
+import { Role } from '../types';
+import { getRankColorConfig } from '../utils/rankColors';
 
 interface PreferencePillProps {
   role: Role | undefined;
@@ -22,8 +22,8 @@ export const PreferencePill: React.FC<PreferencePillProps> = ({
   showRankNumber = true,
   showIcon = true,
   showName = true,
-  maxWidth = "max-w-[110px]",
-  className = "",
+  maxWidth = 'max-w-[110px]',
+  className = '',
 }) => {
   const config = getRankColorConfig(rankIndex);
 
@@ -36,17 +36,11 @@ export const PreferencePill: React.FC<PreferencePillProps> = ({
   return (
     <span
       className={pillClasses.trim()}
-      title={`Rank #${rankIndex + 1}: ${role?.name || "Unknown"}`}
+      title={`Rank #${rankIndex + 1}: ${role?.name || 'Unknown'}`}
     >
-      {showRankNumber && (
-        <span className="text-[10px] opacity-75">#{rankIndex + 1}</span>
-      )}
-      {showIcon && <span>{role?.icon || "⭐"}</span>}
-      {showName && (
-        <span className={`truncate ${maxWidth}`}>
-          {role?.name || "Unknown"}
-        </span>
-      )}
+      {showRankNumber && <span className="text-[10px] opacity-75">#{rankIndex + 1}</span>}
+      {showIcon && <span>{role?.icon || '⭐'}</span>}
+      {showName && <span className={`truncate ${maxWidth}`}>{role?.name || 'Unknown'}</span>}
     </span>
   );
 };
@@ -60,7 +54,7 @@ export const CompactPreferencePill: React.FC<PreferencePillProps> = ({
   showRankNumber = true,
   showIcon = true,
   showName = true,
-  className = "",
+  className = '',
 }) => {
   const config = getRankColorConfig(rankIndex);
 
@@ -73,11 +67,11 @@ export const CompactPreferencePill: React.FC<PreferencePillProps> = ({
   return (
     <span
       className={pillClasses.trim()}
-      title={`Rank #${rankIndex + 1}: ${role?.name || "Unknown"}`}
+      title={`Rank #${rankIndex + 1}: ${role?.name || 'Unknown'}`}
     >
       {showRankNumber && <span className="opacity-75">#{rankIndex + 1}</span>}
-      {showIcon && <span className="text-xs">{role?.icon || "⭐"}</span>}
-      {showName && <span className="truncate max-w-[60px]">{role?.name || "?"}</span>}
+      {showIcon && <span className="text-xs">{role?.icon || '⭐'}</span>}
+      {showName && <span className="truncate max-w-[60px]">{role?.name || '?'}</span>}
     </span>
   );
 };
@@ -98,17 +92,15 @@ export const PreferenceList: React.FC<PreferenceListProps> = ({
   roles,
   maxDisplay = 5,
   compact = false,
-  className = "",
+  className = '',
 }) => {
-  const roleMap = new Map(roles.map((r) => [r.id, r]));
+  const roleMap = new Map(roles.map(r => [r.id, r]));
 
   const displayedPrefs = preferences.slice(0, maxDisplay);
 
   if (displayedPrefs.length === 0) {
     return (
-      <div className={`text-slate-300 text-[11px] italic ${className}`}>
-        No preferences set
-      </div>
+      <div className={`text-slate-300 text-[11px] italic ${className}`}>No preferences set</div>
     );
   }
 
@@ -118,13 +110,7 @@ export const PreferenceList: React.FC<PreferenceListProps> = ({
     <div className={`flex flex-wrap items-center gap-1.5 ${className}`}>
       {displayedPrefs.map((roleId, idx) => {
         const role = roleMap.get(roleId);
-        return (
-          <PillComponent
-            key={roleId}
-            role={role}
-            rankIndex={idx}
-          />
-        );
+        return <PillComponent key={roleId} role={role} rankIndex={idx} />;
       })}
       {preferences.length > maxDisplay && (
         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-slate-100 text-slate-600 border border-slate-200">

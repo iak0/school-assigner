@@ -1,8 +1,8 @@
-import React from "react";
-import { MatchStatistics } from "../types";
-import { Sparkles, Trophy, Award, Search, HelpCircle } from "lucide-react";
-import { MetricCard } from "./MetricCard";
-import { RankPill } from "./RankPill";
+import React from 'react';
+import { MatchStatistics } from '../types';
+import { Sparkles, Trophy, Award, Search, HelpCircle } from 'lucide-react';
+import { MetricCard } from './MetricCard';
+import { RankPill } from './RankPill';
 
 interface StatsSidebarProps {
   stats: MatchStatistics;
@@ -14,9 +14,7 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 sticky top-16">
         <div className="text-center py-6 text-slate-500">
           <Sparkles className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-          <p className="font-medium text-slate-700 text-sm">
-            No assignments yet
-          </p>
+          <p className="font-medium text-slate-700 text-sm">No assignments yet</p>
           <p className="text-xs text-slate-400 mt-0.5">
             Generate matches or drag students to see stats
           </p>
@@ -27,9 +25,7 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
 
   const firstChoicePercent =
     stats.assignedCount > 0
-      ? Math.round(
-          (stats.choiceDistribution.firstChoice / stats.assignedCount) * 100,
-        )
+      ? Math.round((stats.choiceDistribution.firstChoice / stats.assignedCount) * 100)
       : 0;
 
   const topThreePercent =
@@ -39,7 +35,7 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
             stats.choiceDistribution.secondChoice +
             stats.choiceDistribution.thirdChoice) /
             stats.assignedCount) *
-            100,
+            100
         )
       : 0;
 
@@ -99,7 +95,7 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
         {/* Average Rank */}
         <MetricCard
           icon={<Award className="w-4.5 h-4.5" />}
-          value={stats.averageRank ? `#${stats.averageRank}` : "N/A"}
+          value={stats.averageRank ? `#${stats.averageRank}` : 'N/A'}
           label="Avg Preference Rank"
           iconBgColor="bg-blue-500"
           iconColor="text-white"
@@ -119,8 +115,9 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
           borderColor="border-emerald-200"
           bgColor="bg-emerald-50"
           tooltip={{
-            title: "Target % of Optimality",
-            description: "How close the current assignment is to the theoretical best possible outcome.",
+            title: 'Target % of Optimality',
+            description:
+              'How close the current assignment is to the theoretical best possible outcome.',
             formula: (
               <div className="space-y-0.5 font-mono text-[9px] bg-slate-800 p-1.5 rounded text-slate-300">
                 <div>Current Score / Theoretical Optimum × 100</div>
@@ -129,7 +126,8 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
             note: (
               <p>
                 Theoretical Optimum: Same students/preferences/adjustments, but{' '}
-                <strong>ignoring all locks & manual moves</strong>. Shows if your manual changes improve or reduce overall optimality.
+                <strong>ignoring all locks & manual moves</strong>. Shows if your manual changes
+                improve or reduce overall optimality.
               </p>
             ),
           }}
@@ -146,8 +144,8 @@ export const StatsSidebar: React.FC<StatsSidebarProps> = ({ stats }) => {
           borderColor="border-slate-200"
           bgColor="bg-slate-50"
           tooltip={{
-            title: "Optimization Metric",
-            description: "Raw score the algorithm maximizes:",
+            title: 'Optimization Metric',
+            description: 'Raw score the algorithm maximizes:',
             formula: (
               <div className="space-y-0.5 font-mono text-[9px] bg-slate-800 p-1.5 rounded text-slate-300">
                 <div>• 1st Choice: +100 pts</div>

@@ -1,8 +1,8 @@
-import React from "react";
-import { Student, Role, Assignment } from "../types";
-import { getDetailedAssignments } from "../engine/matcher";
-import { Printer, Download, Copy, Check, Sparkles } from "lucide-react";
-import { copyToClipboard } from "../utils/clipboard";
+import React from 'react';
+import { Student, Role, Assignment } from '../types';
+import { getDetailedAssignments } from '../engine/matcher';
+import { Printer, Download, Copy, Check, Sparkles } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 
 interface PrintPosterProps {
   students: Student[];
@@ -18,11 +18,7 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
   classTitle,
 }) => {
   const [copied, setCopied] = React.useState(false);
-  const detailedAssignments = getDetailedAssignments(
-    students,
-    roles,
-    assignments,
-  );
+  const detailedAssignments = getDetailedAssignments(students, roles, assignments);
 
   const assignmentsByRole = new Map<string, typeof detailedAssignments>();
   for (const role of roles) {
@@ -50,28 +46,28 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
       assignments,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
+      type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `classroom-job-assignments-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `classroom-job-assignments-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleCopySummary = () => {
-    let text = `🌟 Classroom Job Assignments 🌟\n\n`;
+    let text = `🌟 Happy Roles Assignments 🌟\n\n`;
     for (const role of roles) {
       const assigned = assignmentsByRole.get(role.id) || [];
-      const names = assigned.map((a) => a.studentName).join(", ") || "(Open)";
-      text += `${role.icon || "⭐"} ${role.name}: ${names}\n`;
+      const names = assigned.map(a => a.studentName).join(', ') || '(Open)';
+      text += `${role.icon || '⭐'} ${role.name}: ${names}\n`;
     }
     if (unassigned.length > 0) {
-      text += `\n📦 Standby / Reserve:\n${unassigned.map((a) => a.studentName).join(", ")}\n`;
+      text += `\n📦 Standby / Reserve:\n${unassigned.map(a => a.studentName).join(', ')}\n`;
     }
 
-    copyToClipboard(text).then((success) => {
+    copyToClipboard(text).then(success => {
       if (success) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -86,13 +82,10 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="text-2xl">🖨️</span>
-            <h2 className="text-xl font-bold text-slate-800">
-              Printable Poster & Export
-            </h2>
+            <h2 className="text-xl font-bold text-slate-800">Printable Poster & Export</h2>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Print a classroom jobs chart for your wall or export the assignment
-            data.
+            Print a classroom jobs chart for your wall or export the assignment data.
           </p>
         </div>
 
@@ -102,12 +95,8 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
             onClick={handleCopySummary}
             className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-2.5 rounded-xl transition-all text-xs border border-slate-200"
           >
-            {copied ? (
-              <Check className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-            {copied ? "Copied to Clipboard!" : "Copy Summary"}
+            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            {copied ? 'Copied to Clipboard!' : 'Copy Summary'}
           </button>
           <button
             type="button"
@@ -123,7 +112,7 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all text-xs"
           >
             <Printer className="w-4 h-4" />
-            Print Classroom Poster
+            Print Happy Roles Poster
           </button>
         </div>
       </div>
@@ -136,13 +125,13 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
             <Sparkles className="w-3.5 h-3.5" /> {classTitle}
           </div>
           <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-            Our Classroom Leaders & Helpers 🎒
+            Our Happy Roles Leaders & Helpers 🎒
           </h1>
         </div>
 
         {/* Roles & Assigned Helpers Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-          {roles.map((role) => {
+          {roles.map(role => {
             const assignedList = assignmentsByRole.get(role.id) || [];
 
             return (
@@ -151,7 +140,7 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
                 className="bg-slate-50/60 rounded-xl p-2.5 border border-slate-200/90 flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{role.icon || "⭐"}</span>
+                  <span className="text-lg">{role.icon || '⭐'}</span>
                   <div className="min-w-0">
                     <h3 className="font-extrabold text-slate-900 text-sm leading-tight truncate">
                       {role.name}
@@ -169,7 +158,7 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
                 <div className="pt-1 border-t border-slate-200/70">
                   {assignedList.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {assignedList.map((a) => (
+                      {assignedList.map(a => (
                         <span
                           key={a.studentId}
                           className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px] font-semibold text-slate-800 shadow-xs whitespace-nowrap"
@@ -194,13 +183,13 @@ export const PrintPoster: React.FC<PrintPosterProps> = ({
           <div className="mt-4 pt-3 border-t-2 border-slate-100">
             <div className="bg-blue-50/60 rounded-xl p-2.5 border border-blue-200">
               <h3 className="font-bold text-blue-950 text-xs mb-0.5 flex items-center gap-1.5">
-                <span>🌟</span> Classroom Assistants on Reserve:
+                <span>🌟</span> Happy Roles Assistants on Reserve:
               </h3>
               <p className="text-[10px] text-blue-700/80 mb-1.5">
                 Ready to assist with special projects, daily teamwork, and upcoming role rotations:
               </p>
               <div className="flex flex-wrap gap-1">
-                {unassigned.map((a) => (
+                {unassigned.map(a => (
                   <span
                     key={a.studentId}
                     className="bg-white px-1.5 py-0.4 rounded border border-blue-200 text-[9px] font-semibold text-slate-800 shadow-xs whitespace-nowrap"

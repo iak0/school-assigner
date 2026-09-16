@@ -64,21 +64,33 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
   };
 
   const recencyOptions = [
-    { value: 1, label: '1 rotation (last cycle only)', description: 'Only avoid immediate repeats' },
+    {
+      value: 1,
+      label: '1 rotation (last cycle only)',
+      description: 'Only avoid immediate repeats',
+    },
     { value: 2, label: '2 rotations (recommended)', description: 'Avoid jobs from last 2 cycles' },
     { value: 3, label: '3 rotations', description: 'Avoid jobs from last 3 cycles' },
     { value: 99, label: 'All history', description: 'Never repeat any past job' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-modal-title"
+    >
       <div
         ref={modalRef}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-slide-up"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
-          <h2 id="settings-modal-title" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2
+            id="settings-modal-title"
+            className="text-lg font-bold text-slate-900 flex items-center gap-2"
+          >
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             Anti-Repetition Settings
           </h2>
@@ -101,7 +113,8 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
             </label>
             <p className="text-xs text-slate-500 mb-3">
               Avoid assigning students to jobs they held within the past X rotations.
-              {rotationHistoryLength > 0 && ` Currently ${rotationHistoryLength} rotation${rotationHistoryLength !== 1 ? 's' : ''} in history.`}
+              {rotationHistoryLength > 0 &&
+                ` Currently ${rotationHistoryLength} rotation${rotationHistoryLength !== 1 ? 's' : ''} in history.`}
             </p>
             <div className="space-y-2">
               {recencyOptions.map(option => (
@@ -141,8 +154,20 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
             </p>
             <div className="space-y-2">
               {[
-                { value: 'strict' as const, label: 'Strict', description: 'Never assign a student to a job they held within the recency window (hard ban)', warning: 'May leave slots unfilled if no other options' },
-                { value: 'balanced' as const, label: 'Balanced (Recommended)', description: 'Strong penalty but allows repeats if no other preferred roles available', warning: null },
+                {
+                  value: 'strict' as const,
+                  label: 'Strict',
+                  description:
+                    'Never assign a student to a job they held within the recency window (hard ban)',
+                  warning: 'May leave slots unfilled if no other options',
+                },
+                {
+                  value: 'balanced' as const,
+                  label: 'Balanced (Recommended)',
+                  description:
+                    'Strong penalty but allows repeats if no other preferred roles available',
+                  warning: null,
+                },
               ].map(option => (
                 <label
                   key={option.value}
@@ -157,14 +182,18 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
                     name="avoidance-strictness"
                     value={option.value}
                     checked={localConfig.avoidanceStrictness === option.value}
-                    onChange={() => setLocalConfig({ ...localConfig, avoidanceStrictness: option.value })}
+                    onChange={() =>
+                      setLocalConfig({ ...localConfig, avoidanceStrictness: option.value })
+                    }
                     className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-slate-900">{option.label}</p>
                       {option.value === 'balanced' && (
-                        <span className="text-xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">Recommended</span>
+                        <span className="text-xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                          Recommended
+                        </span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">{option.description}</p>
@@ -185,13 +214,17 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
               <input
                 type="checkbox"
                 checked={localConfig.standbyPriority}
-                onChange={e => setLocalConfig({ ...localConfig, standbyPriority: e.target.checked })}
+                onChange={e =>
+                  setLocalConfig({ ...localConfig, standbyPriority: e.target.checked })
+                }
                 className="mt-1 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
               />
               <div>
                 <p className="font-medium text-slate-900">Standby Priority</p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Students who were in the Standby/Reserve pool last rotation get a fairness boost (+35 utility points) on all their choices for the next rotation, guaranteeing they're prioritized for a job.
+                  Students who were in the Standby/Reserve pool last rotation get a fairness boost
+                  (+35 utility points) on all their choices for the next rotation, guaranteeing
+                  they're prioritized for a job.
                 </p>
                 <p className="text-xs text-emerald-700 mt-1 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Recommended: Keep enabled for fairness
@@ -206,7 +239,10 @@ export const AntiRepetitionSettingsModal: React.FC<AntiRepetitionSettingsModalPr
               <p className="text-xs text-blue-800 flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>
-                  <strong>{rotationHistoryLength} rotation{rotationHistoryLength !== 1 ? 's' : ''}</strong> in history. Settings apply to future generations.
+                  <strong>
+                    {rotationHistoryLength} rotation{rotationHistoryLength !== 1 ? 's' : ''}
+                  </strong>{' '}
+                  in history. Settings apply to future generations.
                 </span>
               </p>
             </div>

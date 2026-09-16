@@ -4,6 +4,9 @@ node_modules/
 # Build output (deployed via GitHub Actions, not committed)
 dist/
 
+# Local data files (student info, assignments - NEVER COMMIT)
+data/
+
 # Local environment files
 .env
 .env.local
@@ -31,3 +34,6 @@ coverage/
 # Misc
 *.tgz
 .cache/
+
+# Internal planning docs (local paths, not for distribution)
+plans/

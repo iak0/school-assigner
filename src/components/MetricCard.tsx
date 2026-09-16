@@ -1,5 +1,5 @@
-import React from "react";
-import { HelpCircle } from "lucide-react";
+import React from 'react';
+import { HelpCircle } from 'lucide-react';
 
 const Tooltip: React.FC<{
   isOpen: boolean;
@@ -22,12 +22,7 @@ interface TooltipContentProps {
   note?: React.ReactNode;
 }
 
-const TooltipContent: React.FC<TooltipContentProps> = ({
-  title,
-  description,
-  formula,
-  note,
-}) => {
+const TooltipContent: React.FC<TooltipContentProps> = ({ title, description, formula, note }) => {
   return (
     <>
       <div className="font-semibold text-amber-400 mb-1 flex items-center gap-1">
@@ -39,9 +34,7 @@ const TooltipContent: React.FC<TooltipContentProps> = ({
           {formula}
         </div>
       )}
-      {note && (
-        <p className="mt-1.5 text-slate-400 text-[9px]">{note}</p>
-      )}
+      {note && <p className="mt-1.5 text-slate-400 text-[9px]">{note}</p>}
     </>
   );
 };
@@ -82,8 +75,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   if (tooltip) {
     return (
-      <div className={`relative ${bgColor} border ${borderColor} rounded-lg p-3 flex items-center gap-3`}>
-        <div className={`w-9 h-9 rounded-lg ${iconBgColor} ${iconColor} flex items-center justify-center flex-shrink-0`}>
+      <div
+        className={`relative ${bgColor} border ${borderColor} rounded-lg p-3 flex items-center gap-3`}
+      >
+        <div
+          className={`w-9 h-9 rounded-lg ${iconBgColor} ${iconColor} flex items-center justify-center flex-shrink-0`}
+        >
           {icon}
         </div>
         <div className="min-w-0 flex-1">
@@ -115,7 +112,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div className={`${bgColor} border ${borderColor} rounded-lg p-3 flex items-center gap-3`}>
-      <div className={`w-9 h-9 rounded-lg ${iconBgColor} ${iconColor} flex items-center justify-center flex-shrink-0`}>
+      <div
+        className={`w-9 h-9 rounded-lg ${iconBgColor} ${iconColor} flex items-center justify-center flex-shrink-0`}
+      >
         {icon}
       </div>
       <div className="min-w-0">

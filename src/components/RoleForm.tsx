@@ -1,25 +1,25 @@
-import React from "react";
-import { Sparkles, X, Check } from "lucide-react";
+import React from 'react';
+import { Sparkles, X, Check } from 'lucide-react';
 
 const EMOJI_OPTIONS = [
-  "🚶‍♂️",
-  "🚪",
-  "📄",
-  "💻",
-  "🧼",
-  "🌱",
-  "📚",
-  "✏️",
-  "⚽",
-  "🍎",
-  "📅",
-  "⭐",
-  "🎨",
-  "🔔",
-  "🧹",
-  "🥤",
-  "🎒",
-  "🧩",
+  '🚶‍♂️',
+  '🚪',
+  '📄',
+  '💻',
+  '🧼',
+  '🌱',
+  '📚',
+  '✏️',
+  '⚽',
+  '🍎',
+  '📅',
+  '⭐',
+  '🎨',
+  '🔔',
+  '🧹',
+  '🥤',
+  '🎒',
+  '🧩',
 ];
 
 interface RoleFormProps {
@@ -29,19 +29,14 @@ interface RoleFormProps {
     description: string;
     icon: string;
   };
-  onSave: (data: {
-    name: string;
-    capacity: number;
-    description: string;
-    icon: string;
-  }) => void;
+  onSave: (data: { name: string; capacity: number; description: string; icon: string }) => void;
   onCancel: () => void;
   title: string;
   submitLabel: string;
 }
 
 export const RoleForm: React.FC<RoleFormProps> = ({
-  initialData = { name: "", capacity: 1, description: "", icon: "⭐" },
+  initialData = { name: '', capacity: 1, description: '', icon: '⭐' },
   onSave,
   onCancel,
   title,
@@ -55,12 +50,12 @@ export const RoleForm: React.FC<RoleFormProps> = ({
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (!val) {
-      setIcon("⭐");
+      setIcon('⭐');
       return;
     }
-    if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
-      const segmenter = new (Intl as any).Segmenter("en", {
-        granularity: "grapheme",
+    if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+      const segmenter = new (Intl as any).Segmenter('en', {
+        granularity: 'grapheme',
       });
       const segments = Array.from(segmenter.segment(val));
       if (segments.length > 0) {
@@ -68,7 +63,7 @@ export const RoleForm: React.FC<RoleFormProps> = ({
         return;
       }
     }
-    setIcon(Array.from(val).pop() || "⭐");
+    setIcon(Array.from(val).pop() || '⭐');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,22 +105,20 @@ export const RoleForm: React.FC<RoleFormProps> = ({
               required
               placeholder="e.g. Line Leader..."
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-700 mb-0.5">
-              Slots
-            </label>
+            <label className="block text-[10px] font-semibold text-slate-700 mb-0.5">Slots</label>
             <input
               type="number"
               min="1"
               max="10"
               required
               value={capacity}
-              onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+              onChange={e => setCapacity(parseInt(e.target.value) || 1)}
               className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-center"
             />
           </div>
@@ -146,15 +139,13 @@ export const RoleForm: React.FC<RoleFormProps> = ({
                 title="Type or paste any emoji. Press ⌘+Ctrl+Space on Mac or Win+. on Windows."
               />
               <div className="flex flex-wrap gap-0.5 max-w-[120px]">
-                {EMOJI_OPTIONS.slice(0, 10).map((em) => (
+                {EMOJI_OPTIONS.slice(0, 10).map(em => (
                   <button
                     key={em}
                     type="button"
                     onClick={() => setIcon(em)}
                     className={`text-xs p-0.5 rounded hover:bg-white transition-all ${
-                      icon === em
-                        ? "bg-white shadow-xs scale-110"
-                        : "opacity-70 hover:opacity-100"
+                      icon === em ? 'bg-white shadow-xs scale-110' : 'opacity-70 hover:opacity-100'
                     }`}
                   >
                     {em}
@@ -173,7 +164,7 @@ export const RoleForm: React.FC<RoleFormProps> = ({
             type="text"
             placeholder="What does a student do in this role?"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={e => setDescription(e.target.value)}
             className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
           />
         </div>

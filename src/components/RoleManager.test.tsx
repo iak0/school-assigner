@@ -29,7 +29,7 @@ describe('RoleManager', () => {
   it('renders job list with names, capacities, and icons', () => {
     render(<RoleManager roles={sampleRoles} studentCount={30} onUpdateRoles={onUpdateRoles} />);
 
-    expect(screen.getByText('Classroom Jobs & Slot Capacities')).toBeInTheDocument();
+    expect(screen.getByText('Happy Roles & Slot Capacities')).toBeInTheDocument();
     expect(screen.getByText('Line Leader')).toBeInTheDocument();
     expect(screen.getByText('Door Monitor')).toBeInTheDocument();
     expect(screen.getByText('Paper Passer')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('RoleManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /add new job/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Create New Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Create New Happy Role')).toBeInTheDocument();
     });
 
     // Check form fields are empty
@@ -64,7 +64,7 @@ describe('RoleManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /add new job/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Create New Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Create New Happy Role')).toBeInTheDocument();
     });
 
     // Fill in name
@@ -94,14 +94,14 @@ describe('RoleManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /add new job/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Create New Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Create New Happy Role')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
     // Form should be gone
     await waitFor(() => {
-      expect(screen.queryByText('Create New Classroom Job')).not.toBeInTheDocument();
+      expect(screen.queryByText('Create New Happy Role')).not.toBeInTheDocument();
     });
 
     expect(onUpdateRoles).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('RoleManager', () => {
     fireEvent.click(editButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Edit Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Edit Happy Role')).toBeInTheDocument();
     });
 
     // Form should be prefilled with Line Leader's data
@@ -134,7 +134,7 @@ describe('RoleManager', () => {
     fireEvent.click(editButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Edit Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Edit Happy Role')).toBeInTheDocument();
     });
 
     // Change name
@@ -164,13 +164,13 @@ describe('RoleManager', () => {
     fireEvent.click(editButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Edit Classroom Job')).toBeInTheDocument();
+      expect(screen.getByText('Edit Happy Role')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Edit Classroom Job')).not.toBeInTheDocument();
+      expect(screen.queryByText('Edit Happy Role')).not.toBeInTheDocument();
     });
 
     expect(onUpdateRoles).not.toHaveBeenCalled();

@@ -1,14 +1,35 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+const FDB = require('fake-indexeddb');
+
+// Set up fake-indexeddb globally
+global.indexedDB = FDB.indexedDB;
+global.IDBKeyRange = FDB.IDBKeyRange;
+global.IDBTransaction = FDB.IDBTransaction;
+global.IDBRequest = FDB.IDBRequest;
+global.IDBDatabase = FDB.IDBDatabase;
+global.IDBObjectStore = FDB.IDBObjectStore;
+global.IDBIndex = FDB.IDBIndex;
+global.IDBCursor = FDB.IDBCursor;
+global.IDBOpenDBRequest = FDB.IDBOpenDBRequest;
 
 // Mock localStorage for jsdom
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; },
-    get length() { return Object.keys(store).length; },
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
     key: (index: number) => Object.keys(store)[index] ?? null,
   };
 })();
@@ -21,7 +42,7 @@ Object.defineProperty(window, 'localStorage', {
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
@@ -72,4 +93,18 @@ beforeAll(() => {
 
 afterAll(() => {
   console.error = originalError;
+});
+
+// Close any open IndexedDB connections after each test
+afterEach(async () => {
+  try {
+    const dbs = (await FDB.indexedDB.databases?.()) || [];
+    for (const db of dbs) {
+      if (db.name) {
+        FDB.indexedDB.deleteDatabase(db.name);
+      }
+    }
+  } catch {
+    // Ignore
+  }
 });

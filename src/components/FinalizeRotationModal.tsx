@@ -73,7 +73,12 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       <div
         ref={modalRef}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-slide-up"
@@ -97,7 +102,10 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Rotation Name */}
           <div>
-            <label htmlFor="rotation-name" className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="rotation-name"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Rotation Name
             </label>
             <input
@@ -105,10 +113,15 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
               id="rotation-name"
               type="text"
               value={name}
-              onChange={e => { setName(e.target.value); setNameError(false); }}
+              onChange={e => {
+                setName(e.target.value);
+                setNameError(false);
+              }}
               onBlur={() => setNameError(!name.trim())}
               className={`w-full px-3 py-2 bg-white border rounded-xl text-sm transition-colors ${
-                nameError ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-200 focus:ring-blue-500'
+                nameError
+                  ? 'border-rose-400 focus:ring-rose-400'
+                  : 'border-slate-200 focus:ring-blue-500'
               } focus:outline-none focus:ring-2`}
               placeholder="e.g., October 2026 Jobs"
               maxLength={50}
@@ -122,7 +135,10 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label htmlFor="rotation-notes" className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="rotation-notes"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Notes (optional)
             </label>
             <textarea
@@ -149,7 +165,9 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
                 className="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
               />
               <label htmlFor="clear-board" className="flex-1 cursor-pointer">
-                <p className="font-medium text-slate-800">Archive & clear board for next rotation</p>
+                <p className="font-medium text-slate-800">
+                  Archive & clear board for next rotation
+                </p>
                 <p className="text-xs text-slate-500 mt-0.5">
                   All students move to Standby. Start fresh with clean assignments.
                 </p>
@@ -179,7 +197,8 @@ export const FinalizeRotationModal: React.FC<FinalizeRotationModalProps> = ({
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-800">
-                No current assignments to archive. The rotation will be saved with all students in Standby.
+                No current assignments to archive. The rotation will be saved with all students in
+                Standby.
               </p>
             </div>
           )}
