@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { clearWorkspace } from './services/storage/indexedDb';
 import { Student, Role, Assignment } from './types';
 
 // Mock window.location for share link tests
@@ -25,27 +26,11 @@ const mockAnchor = {
 };
 const originalCreateElement = document.createElement.bind(document);
 
-// Helper to clear our specific IndexedDB database
-async function clearTestIndexedDB() {
-  try {
-    // Simple delete - don't wait for blocked
-    await new Promise<void>(resolve => {
-      const req = indexedDB.deleteDatabase(DB_NAME);
-      req.onsuccess = () => resolve();
-      req.onerror = () => resolve();
-      req.onblocked = () => resolve();
-      // Timeout fallback
-      setTimeout(resolve, 100);
-    });
-  } catch {
-    // Ignore errors
-  }
-}
-
 describe('App Core Functionality', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     localStorage.clear();
+    await clearWorkspace();
     mockLocation.hash = '';
     mockAnchor.href = '';
     mockAnchor.download = '';
@@ -59,7 +44,8 @@ describe('App Core Functionality', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await clearWorkspace();
     vi.restoreAllMocks();
   });
 
@@ -191,11 +177,11 @@ describe('App Core Functionality', () => {
       // Click export
       fireEvent.click(screen.getByText('Export Class File (.json)'));
 
-      // Verify blob creation - the export creates an anchor and clicks it
-      expect(URL.createObjectURL).toHaveBeenCalled();
-      // The mockAnchor.click might not be called if the element is created differently
-      // Just verify the download filename pattern would be correct
-      expect(mockAnchor.download).toMatch(/my-class-jobs-\d{4}-\d{2}-\d{2}\.json/);
+      // Verify blob creation - the export is async so wait for it
+      await waitFor(() => {
+        expect(URL.createObjectURL).toHaveBeenCalled();
+        expect(mockAnchor.download).toMatch(/my-class-jobs-\d{4}-\d{2}-\d{2}\.json/);
+      });
     });
 
     it('imports JSON file and restores class title, roles, students, assignments', async () => {

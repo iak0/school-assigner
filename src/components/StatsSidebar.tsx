@@ -1,6 +1,7 @@
+import { Award, HelpCircle, Search, Sparkles, Trophy } from 'lucide-react';
 import React from 'react';
+
 import { MatchStatistics } from '../types';
-import { Sparkles, Trophy, Award, Search, HelpCircle } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 import { RankPill } from './RankPill';
 

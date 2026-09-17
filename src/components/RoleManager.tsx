@@ -1,6 +1,7 @@
+import { AlertCircle, Edit2, Plus, Trash2, Users } from 'lucide-react';
 import React, { useState } from 'react';
+
 import { Role } from '../types';
-import { Plus, Trash2, Edit2, Users, AlertCircle } from 'lucide-react';
 import { RoleForm } from './RoleForm';
 
 interface RoleManagerProps {

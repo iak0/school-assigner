@@ -1,36 +1,42 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Student,
-  Role,
-  Assignment,
-  AppData,
-  RotationSnapshot,
-  AntiRepetitionConfig,
-} from './types';
-import { calculateStatistics, generateAssignments } from './engine/matcher';
-import { Navbar, ActiveTab, SyncStatus } from './components/Navbar';
-import { StatsSidebar } from './components/StatsSidebar';
-import { AssignmentBoard } from './components/AssignmentBoard';
-import { StudentManager } from './components/StudentManager';
-import { RoleManager } from './components/RoleManager';
-import { PrintPoster } from './components/PrintPoster';
-import { RotationHistory } from './components/RotationHistory';
-import { AccountModal } from './components/AccountModal';
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import { Sparkles, RotateCcw, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { copyToClipboard } from './utils/clipboard';
+import { CheckCircle2, RotateCcw, Sparkles } from 'lucide-react';
+import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { AccountModal } from './components/AccountModal';
+import { AssignmentBoard } from './components/AssignmentBoard';
+import { ActiveTab, Navbar, SyncStatus } from './components/Navbar';
+import { PrintPoster } from './components/PrintPoster';
+import { RoleManager } from './components/RoleManager';
+import { RotationHistory } from './components/RotationHistory';
+import { StatsSidebar } from './components/StatsSidebar';
+import { StudentManager } from './components/StudentManager';
+import { calculateStatistics, generateAssignments } from './engine/matcher';
 import {
-  getWorkspace,
-  saveWorkspace,
-  updateWorkspace,
+  attemptSilentRefresh,
+  hasValidToken,
+  isSignedIn,
+  restoreSession,
+} from './services/auth/googleAuth';
+import { migrateToV2 } from './services/migration/migrationEngine';
+import {
   clearWorkspace,
   exportFromIndexedDB,
+  getWorkspace,
   importToIndexedDB,
+  saveWorkspace,
+  updateWorkspace,
 } from './services/storage/indexedDb';
-import { isSignedIn } from './services/auth/googleAuth';
 import { fetchCloudWorkspace, saveCloudWorkspace } from './services/sync/googleDriveSync';
-import { migrateToV2 } from './services/migration/migrationEngine';
+import {
+  AntiRepetitionConfig,
+  AppData,
+  Assignment,
+  Role,
+  RotationSnapshot,
+  Student,
+} from './types';
+import { copyToClipboard } from './utils/clipboard';
 
 const STORAGE_KEY = 'classroom_role_assigner_data_v1';
 
@@ -242,7 +248,7 @@ export default function App() {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
-  const [userProfile, _setUserProfile] = useState<{
+  const [userProfile, setUserProfile] = useState<{
     name: string;
     email: string;
     picture: string;
@@ -483,6 +489,30 @@ export default function App() {
     }
   }, [loadFromIndexedDB]);
 
+  // Restore persistent Google auth session across page refreshes
+  useEffect(() => {
+    const profile = restoreSession();
+    if (profile) {
+      setUserProfile(profile);
+      if (hasValidToken()) {
+        setSyncStatus('synced');
+        triggerCloudSync();
+      } else if (navigator.onLine) {
+        // Token expired (> 1 hour) - attempt silent refresh in background with email hint
+        setSyncStatus('syncing');
+        attemptSilentRefresh(profile.email).then(token => {
+          if (token) {
+            setSyncStatus('synced');
+            triggerCloudSync();
+          } else {
+            // Browser blocked iframe third-party cookies or session expired
+            setSyncStatus('local');
+          }
+        });
+      }
+    }
+  }, [triggerCloudSync]);
+
   useEffect(() => {
     if (!hasLoaded) return;
 
@@ -695,7 +725,7 @@ export default function App() {
         isOpen={showAccountModal}
         onClose={() => setShowAccountModal(false)}
         onSyncStatusChange={setSyncStatus}
-        onProfileChange={_setUserProfile}
+        onProfileChange={setUserProfile}
       />
 
       {saveMessage && (

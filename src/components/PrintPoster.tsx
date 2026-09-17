@@ -1,7 +1,8 @@
+import { Check, Copy, Download, Printer, Sparkles } from 'lucide-react';
 import React from 'react';
-import { Student, Role, Assignment } from '../types';
+
 import { getDetailedAssignments } from '../engine/matcher';
-import { Printer, Download, Copy, Check, Sparkles } from 'lucide-react';
+import { Assignment, Role, Student } from '../types';
 import { copyToClipboard } from '../utils/clipboard';
 
 interface PrintPosterProps {

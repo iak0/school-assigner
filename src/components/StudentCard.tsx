@@ -1,8 +1,9 @@
-import React from 'react';
 import { GripVertical } from 'lucide-react';
-import { CompactPreferencePill } from './PreferencePill';
+import React from 'react';
+
 import { useStudentHistory } from '../hooks/useStudentHistory';
-import { RotationSnapshot, Role } from '../types';
+import { Role, RotationSnapshot } from '../types';
+import { CompactPreferencePill } from './PreferencePill';
 
 interface StudentCardProps {
   studentId: string;

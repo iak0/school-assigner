@@ -1,12 +1,12 @@
 import {
-  Student,
-  Role,
+  AntiRepetitionConfig,
   Assignment,
+  AssignmentWithDetails,
   MatchConfig,
   MatchStatistics,
-  AssignmentWithDetails,
+  Role,
   RotationSnapshot,
-  AntiRepetitionConfig,
+  Student,
 } from '../types';
 
 export const DEFAULT_CONFIG: MatchConfig = {

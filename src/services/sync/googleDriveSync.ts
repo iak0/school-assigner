@@ -2,6 +2,7 @@ import { getAccessToken } from '../auth/googleAuth';
 import { AppDataEnvelopeV2 } from '../migration/migrationEngine';
 
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';
+const DRIVE_UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 const APP_DATA_FOLDER = 'appDataFolder';
 const FILE_NAME = 'workspace.json';
 
@@ -65,12 +66,33 @@ export async function fetchCloudWorkspace(): Promise<SyncResult> {
       return { success: true, data: undefined, revision: 0, lastModified: '' };
     }
 
-    const response = await apiRequest<{ id: string; name: string; modifiedTime: string }>(
-      `/files/${fileId}?alt=media`,
-      { method: 'GET' }
-    );
+    const token = await getAccessToken();
+    if (!token) {
+      throw new Error('No access token available');
+    }
 
-    const parsed = JSON.parse(response as unknown as string) as AppDataEnvelopeV2;
+    const response = await fetch(`${DRIVE_API_BASE}/files/${fileId}?alt=media`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401) {
+      throw new Error('Token expired or invalid');
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Drive API error: ${response.status} - ${errorText}`);
+    }
+
+    const rawText = await response.text();
+    if (!rawText || !rawText.trim()) {
+      return { success: true, data: undefined, revision: 0, lastModified: '' };
+    }
+
+    const parsed = JSON.parse(rawText) as AppDataEnvelopeV2;
     return {
       success: true,
       data: parsed,
@@ -84,51 +106,50 @@ export async function fetchCloudWorkspace(): Promise<SyncResult> {
 
 export async function saveCloudWorkspace(envelope: AppDataEnvelopeV2): Promise<SyncResult> {
   try {
-    const fileId = await findAppDataFile();
-
-    // For appDataFolder, use simple upload (not multipart) - more reliable
     const token = await getAccessToken();
     if (!token) {
       throw new Error('No access token available');
     }
 
-    const body = JSON.stringify(envelope);
-    const metadata = {
-      name: FILE_NAME,
-      parents: [APP_DATA_FOLDER],
-      modifiedTime: envelope.lastModified,
-    };
+    let fileId = await findAppDataFile();
 
-    let response: Response;
-    if (fileId) {
-      // Update existing file with simple upload
-      response = await fetch(`${DRIVE_API_BASE}/files/${fileId}?uploadType=media`, {
-        method: 'PATCH',
+    // If file doesn't exist yet, create file metadata record in appDataFolder first
+    if (!fileId) {
+      const createResponse = await fetch(`${DRIVE_API_BASE}/files`, {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body,
+        body: JSON.stringify({
+          name: FILE_NAME,
+          parents: [APP_DATA_FOLDER],
+        }),
       });
-    } else {
-      // Create new file with multipart (required for initial creation with metadata)
-      const formData = new FormData();
-      formData.append(
-        'metadata',
-        new Blob([JSON.stringify(metadata)], { type: 'application/json; charset=utf-8' })
-      );
-      formData.append('file', new Blob([body], { type: 'application/json; charset=utf-8' }));
 
-      response = await fetch(`${DRIVE_API_BASE}/files?uploadType=multipart`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+      if (!createResponse.ok) {
+        const errorText = await createResponse.text();
+        throw new Error(`Drive create error: ${createResponse.status} - ${errorText}`);
+      }
+
+      const created = (await createResponse.json()) as { id: string };
+      fileId = created.id;
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Drive API error: ${response.status} - ${errorText}`);
+    // Upload / update file content using simple media upload to the upload endpoint
+    const body = JSON.stringify(envelope);
+    const uploadResponse = await fetch(`${DRIVE_UPLOAD_BASE}/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Drive API error: ${uploadResponse.status} - ${errorText}`);
     }
 
     return {

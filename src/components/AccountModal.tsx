@@ -1,8 +1,18 @@
+import { Clock, Cloud, CloudOff, Loader2, LogOut, RefreshCw, Shield } from 'lucide-react';
 import React from 'react';
-import { Clock, RefreshCw, LogOut, Shield, Cloud, CloudOff, Loader2 } from 'lucide-react';
-import { signIn, signOut, getCachedProfile, isSignedIn } from '../services/auth/googleAuth';
-import { fetchCloudWorkspace, saveCloudWorkspace } from '../services/sync/googleDriveSync';
+
+import {
+  attemptSilentRefresh,
+  getAccessToken,
+  getCachedProfile,
+  hasValidToken,
+  isSignedIn,
+  restoreSession,
+  signIn,
+  signOut,
+} from '../services/auth/googleAuth';
 import { getWorkspace, saveWorkspace } from '../services/storage/indexedDb';
+import { fetchCloudWorkspace, saveCloudWorkspace } from '../services/sync/googleDriveSync';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -65,6 +75,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     setError(null);
 
     try {
+      let token = await getAccessToken();
+      if (!token) {
+        // If silent token renewal was blocked by browser third-party cookie restrictions,
+        // use this user click gesture to prompt account selection and refresh token
+        const refreshedProfile = await signIn();
+        setProfile(refreshedProfile);
+        onProfileChange?.(refreshedProfile);
+        token = await getAccessToken();
+      }
+
+      if (!token) {
+        throw new Error('Unable to connect to Google Drive. Please sign in again.');
+      }
+
       const localEnvelope = await getWorkspace();
       if (!localEnvelope) {
         updateSyncStatus('local');
@@ -93,7 +117,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       }
 
       updateSyncStatus('local');
-    } catch {
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Sync failed';
+      setError(message);
       updateSyncStatus('error');
     }
   };
@@ -115,11 +141,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      // Only show cached profile, don't auto-fetch from cloud (avoids popups)
-      const cached = getCachedProfile();
-      if (cached && isSignedIn()) {
+      // Restore persisted profile and check token validity
+      const cached = restoreSession() || getCachedProfile();
+      if (cached) {
         setProfile(cached);
-        updateSyncStatus('synced');
+        if (hasValidToken()) {
+          updateSyncStatus('synced');
+        } else if (!navigator.onLine) {
+          updateSyncStatus('offline');
+        } else {
+          // Attempt silent background token refresh
+          attemptSilentRefresh(cached.email).then(token => {
+            updateSyncStatus(token ? 'synced' : 'local');
+          });
+        }
       } else if (!navigator.onLine) {
         updateSyncStatus('offline');
       } else {

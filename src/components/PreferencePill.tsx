@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Role } from '../types';
 import { getRankColorConfig } from '../utils/rankColors';
 

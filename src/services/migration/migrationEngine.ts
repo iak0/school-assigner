@@ -1,10 +1,10 @@
 import {
-  AppData,
-  Role,
-  Student,
-  Assignment,
-  RotationSnapshot,
   AntiRepetitionConfig,
+  AppData,
+  Assignment,
+  Role,
+  RotationSnapshot,
+  Student,
 } from '../../types';
 
 export interface AppDataEnvelopeV2 {

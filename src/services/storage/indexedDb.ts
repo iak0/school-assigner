@@ -1,6 +1,7 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { DBSchema, IDBPDatabase, openDB } from 'idb';
+
 import { AppData } from '../../types';
-import { migrateToV2, AppDataEnvelopeV2 } from '../migration/migrationEngine';
+import { AppDataEnvelopeV2, migrateToV2 } from '../migration/migrationEngine';
 
 const DB_NAME = 'ClassroomRoleAssignerDB';
 const DB_VERSION = 1;

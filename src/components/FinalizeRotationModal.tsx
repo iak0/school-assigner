@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface FinalizeRotationModalProps {
   isOpen: boolean;

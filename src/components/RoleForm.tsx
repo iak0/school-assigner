@@ -1,5 +1,5 @@
+import { Check, Sparkles, X } from 'lucide-react';
 import React from 'react';
-import { Sparkles, X, Check } from 'lucide-react';
 
 const EMOJI_OPTIONS = [
   '🚶‍♂️',

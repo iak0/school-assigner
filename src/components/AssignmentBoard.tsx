@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Student, Role, Assignment, RotationSnapshot } from '../types';
-import { getDetailedAssignments } from '../engine/matcher';
 import { ArrowDownToLine, CheckCircle2, Search } from 'lucide-react';
-import { FinalizeRotationModal } from './FinalizeRotationModal';
-import { AntiRepetitionSettingsModal } from './AntiRepetitionSettingsModal';
+import React, { useState } from 'react';
+
+import { getDetailedAssignments } from '../engine/matcher';
 import { useStudentHistory } from '../hooks/useStudentHistory';
+import { Assignment, Role, RotationSnapshot, Student } from '../types';
+import { AntiRepetitionSettingsModal } from './AntiRepetitionSettingsModal';
+import { FinalizeRotationModal } from './FinalizeRotationModal';
 import { StudentCard } from './StudentCard';
 
 interface AssignmentBoardProps {

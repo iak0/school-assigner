@@ -1,5 +1,5 @@
-import React from 'react';
 import { HelpCircle } from 'lucide-react';
+import React from 'react';
 
 const Tooltip: React.FC<{
   isOpen: boolean;

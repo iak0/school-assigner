@@ -1,6 +1,7 @@
+import { Check, Sparkles, X } from 'lucide-react';
 import React from 'react';
+
 import { Role } from '../types';
-import { Sparkles, X, Check } from 'lucide-react';
 
 const PREFERENCE_RANKS = [
   { index: 0, label: '1st Choice', emoji: '🥇', color: 'amber' },

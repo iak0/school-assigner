@@ -40,10 +40,15 @@ The app is configured to listen on `0.0.0.0`. When running `npm run dev`, Vite p
 npm test
 ```
 
-The test suite covers:
+The test suite covers **82 tests across 7 test files** (100% passing):
 
-- **Matcher engine** (7 tests): Min-Cost Max-Flow algorithm correctness, preference scoring, adjustment weights, lock enforcement, standby pool, random tiebreaker for equal utilities, rotation history
-- **App integration** (16 tests): class title persistence, export/import JSON, share link generation, clear all data, URL hash sync, matching board integration, lz-string compression round-trip, rotation history persistence
+- **Matcher engine** ([`src/engine/matcher.test.ts`](src/engine/matcher.test.ts) - 9 tests): Min-Cost Max-Flow algorithm correctness, preference scoring, adjustment weights, lock enforcement, standby pool, random tiebreaker for equal utilities, rotation history, anti-repetition penalty
+- **Google Auth & Session Persistence** ([`src/services/auth/googleAuth.test.ts`](src/services/auth/googleAuth.test.ts) - 6 tests): Storage state, session restoration on mount, profile preservation past token expiry, legacy format migration, clean sign-out, silent token refresh with email hint
+- **Schema Migration Engine** ([`src/services/migration/migrationEngine.test.ts`](src/services/migration/migrationEngine.test.ts) - 17 tests): v1→v2 schema envelope migration, legacy localStorage parsing, validation, backward compatibility
+- **Matching Board Component** ([`src/components/AssignmentBoard.test.tsx`](src/components/AssignmentBoard.test.tsx) - 15 tests): Board rendering, match generation, slot locks, drag & drop assignments/swaps, standby bank, unassigned pool
+- **Job & Slot Manager** ([`src/components/RoleManager.test.tsx`](src/components/RoleManager.test.tsx) - 10 tests): Job creation, editing, capacity limits, emoji selector, deletion
+- **Student Manager** ([`src/components/StudentManager.test.tsx`](src/components/StudentManager.test.tsx) - 9 tests): Roster adding, inline editing, preference ordering, adjustment scores, bulk roster import
+- **App Integration** ([`src/App.test.tsx`](src/App.test.tsx) - 16 tests): Class title persistence, export/import JSON, share link generation, clear all data, URL hash sync, matching board integration, lz-string compression round-trip, rotation history persistence
 
 ---
 
@@ -245,13 +250,15 @@ src/
 │   └── rankColors.ts              # Shared rank color configurations (1st-5th + unranked)
 ├── services/
 │   ├── auth/
-│   │   └── googleAuth.ts          # Google Identity Services (GIS) token client, signIn/signOut/silent
+│   │   ├── googleAuth.ts          # Google Identity Services (GIS) token client, signIn/signOut/silent refresh
+│   │   └── googleAuth.test.ts     # Auth session persistence & token lifecycle test suite (6 tests)
 │   ├── storage/
 │   │   └── indexedDb.ts           # IndexedDB wrapper (idb), migration from localStorage
 │   ├── sync/
 │   │   └── googleDriveSync.ts     # Google Drive API v3 appDataFolder sync
 │   └── migration/
-│       └── migrationEngine.ts     # Schema v1→v2 migration, validation
+│       ├── migrationEngine.ts     # Schema v1→v2 migration, validation
+│       └── migrationEngine.test.ts# Migration unit tests (17 tests)
 ├── App.tsx                        # Main state management, IndexedDB auto-save, background sync, export/import/share
 ├── main.tsx                       # App entry point
 └── test-setup.ts                  # Vitest jsdom mocks (localStorage, IndexedDB, clipboard, URL, etc.)
@@ -271,12 +278,21 @@ src/
 - Typical payload (~4KB JSON) compresses to <2KB URL — well within browser limits.
 - Open on any device to instantly sync class data without file transfer.
 
-### Google Drive Sync (Optional)
+### Google Sign-In & Google Drive Sync (Optional)
 
-- **Scope**: `https://www.googleapis.com/auth/drive.appdata` — private app folder, user-only access
-- **File**: `appDataFolder/workspace.json` — single file, revision-tracked
-- **Conflict Resolution**: Last-write-wins by revision counter; cloud revision > local triggers auto-update
-- **Offline Queue**: Local edits flushed automatically when connection restored
+- **Zero-Backend Architecture**: 100% client-side authentication and storage. Student names and teacher adjustments never touch external servers, remaining fully FERPA/school-privacy compliant.
+- **Persistent Sessions Across Refreshes**:
+  - `google_user_profile_v1` permanently stores `{ name, email, picture, sub }` until explicit Sign Out. The teacher's identity is immediately restored on mount via `restoreSession()`.
+  - `google_auth_token_v1` stores the short-lived 1-hour access token.
+  - On page load, if the access token has expired, `attemptSilentRefresh(profile.email)` silently requests a fresh token using Google Identity Services `login_hint` without showing popup prompts.
+  - If third-party cookie restrictions (e.g. Safari ITP, modern Chrome) block silent iframe renewal, the user remains signed in and clicking "Sync Now" in `AccountModal` triggers a 1-tap account confirmation gesture to renew.
+- **Google Drive `appDataFolder`**:
+  - **Scope**: `https://www.googleapis.com/auth/drive.appdata` — sandboxed application folder invisible to the user in regular Google Drive, preventing accidental deletion.
+  - **Upload Protocol**: Uses standard 2-step file handling to avoid browser `FormData` MIME errors:
+    1. Metadata creation via `POST https://www.googleapis.com/drive/v3/files` with `{ name: 'workspace.json', parents: ['appDataFolder'] }` (first-time only).
+    2. Direct JSON content patch via `PATCH https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`.
+- **Conflict Resolution**: Revision-tracked; higher cloud revision automatically updates local IndexedDB.
+- **Offline Resilience**: Edits while offline save immediately to IndexedDB with an offline badge and automatically flush to Google Drive once internet connection is restored.
 
 ---
 
@@ -351,7 +367,7 @@ npm run format
 
 ### Configuration
 
-- **ESLint** (`eslint.config.js`): TypeScript, React, React Hooks rules with `typescript-eslint`
+- **ESLint** (`eslint.config.js`): TypeScript, React, React Hooks rules with `typescript-eslint`; also auto-sorts imports
 - **Prettier** (`.prettierrc`): Single quotes, 2-space tabs, trailing commas, 100-char line width
 - **Husky + lint-staged** (`.husky/pre-commit`): Runs `eslint --fix` + `prettier --write` on staged files before every commit
 

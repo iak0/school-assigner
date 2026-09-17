@@ -1,6 +1,7 @@
+import { ChevronDown, ChevronUp, List, RotateCcw, Search, Table, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { RotationSnapshot, Student, Role } from '../types';
-import { Trash2, ChevronDown, ChevronUp, Table, List, Search, RotateCcw } from 'lucide-react';
+
+import { Role, RotationSnapshot, Student } from '../types';
 
 interface RotationHistoryProps {
   rotationHistory: RotationSnapshot[];

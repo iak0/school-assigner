@@ -4,6 +4,7 @@ import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import prettierConfig from "eslint-config-prettier";
 import pluginPrettier from "eslint-plugin-prettier";
+import pluginSimpleImportSort from "eslint-plugin-simple-import-sort";
 
 export default tseslint.config(
   { ignores: ["dist/", "node_modules/", "*.config.*", "coverage/", "**/*.test.{ts,tsx}", "src/test-setup.ts"] },
@@ -15,6 +16,7 @@ export default tseslint.config(
       react: pluginReact,
       "react-hooks": pluginReactHooks,
       prettier: pluginPrettier,
+      "simple-import-sort": pluginSimpleImportSort,
     },
     languageOptions: {
       parserOptions: {
@@ -41,6 +43,7 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/ban-ts-comment": ["error", { "ts-ignore": "allow-with-description" }],
+      "simple-import-sort/imports": "error",
     },
   },
   prettierConfig

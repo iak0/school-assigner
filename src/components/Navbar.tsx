@@ -1,25 +1,24 @@
-import React from 'react';
 import {
-  Users,
   Briefcase,
-  Target,
-  Printer,
-  Download,
-  Upload,
-  Link,
-  PlusCircle,
-  Settings,
-  HardDrive,
-  Trash2,
-  Edit2,
   Check,
-  History,
-  User,
   Cloud,
   CloudOff,
+  Download,
+  Edit2,
+  HardDrive,
+  History,
+  Link,
   Loader2,
+  PlusCircle,
+  Printer,
+  Settings,
+  Target,
+  Trash2,
+  Upload,
+  User,
+  Users,
 } from 'lucide-react';
-import { AccountModal } from './AccountModal';
+import React from 'react';
 
 export type ActiveTab = 'board' | 'students' | 'roles' | 'print' | 'history';
 
@@ -461,7 +460,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       </div>
-      <AccountModal isOpen={false} onClose={() => {}} />
     </header>
   );
 };
