@@ -1,5 +1,5 @@
 import confetti from 'canvas-confetti';
-import { CheckCircle2, RotateCcw, Sparkles } from 'lucide-react';
+import { CheckCircle2, MoreHorizontal, RotateCcw, Sparkles } from 'lucide-react';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -246,6 +246,7 @@ export default function App() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
   const [userProfile, setUserProfile] = useState<{
@@ -738,48 +739,111 @@ export default function App() {
       <main className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
         {activeTab === 'board' && (
           <>
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl px-5 py-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🎯</span>
-                  <h2 className="text-base sm:text-lg font-bold">Classroom Job Matching Board</h2>
-                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal hidden md:inline">
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl px-4 py-3 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xl flex-shrink-0">🎯</span>
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold truncate">
+                    Classroom Job Matching Board
+                  </h2>
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal hidden sm:inline-block">
                     Drag students to swap, move, or unassign
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleClearAssignments}
-                  disabled={assignments.length === 0}
-                  className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-2 rounded-xl border border-white/20 transition-all text-xs disabled:opacity-40"
-                  title="Clear all student assignments"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Clear
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowFinalizeModal(true)}
-                  disabled={assignments.length === 0}
-                  className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl shadow-md transition-all text-xs disabled:opacity-50"
-                  title="Archive current assignments and start next rotation"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Finalize Rotation 🔒
-                </button>
-
+              <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                {/* Primary actions - Generate always visible, Finalize visible on sm+ */}
                 <button
                   type="button"
                   onClick={handleGenerateWithConfetti}
                   disabled={roles.length === 0 || students.length === 0}
-                  className="flex items-center gap-1.5 bg-white hover:bg-blue-50 text-blue-700 font-extrabold px-4 py-2 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-xs disabled:opacity-50"
+                  className="flex-1 sm:flex-none items-center justify-center gap-1.5 bg-white hover:bg-blue-50 text-blue-700 font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all text-xs sm:text-sm disabled:opacity-50 min-h-[44px]"
+                  title="Generate optimal matches"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />✨ Generate
-                  Optimal Matches
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    <Sparkles
+                      className="w-4 h-4 text-amber-500 animate-pulse flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="hidden sm:inline">Generate Optimal Matches</span>
+                    <span className="sm:hidden">Generate</span>
+                  </span>
+                </button>
+
+                {/* Finalize Rotation - visible on sm+, in dropdown on mobile */}
+                <button
+                  type="button"
+                  onClick={() => setShowFinalizeModal(true)}
+                  disabled={assignments.length === 0}
+                  className="hidden sm:flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-md transition-all text-xs sm:text-sm disabled:opacity-50 min-h-[44px]"
+                  title="Archive current assignments and start next rotation"
+                >
+                  <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                  Finalize Rotation 🔒
+                </button>
+
+                {/* Secondary actions dropdown - Clear on mobile, or all on mobile */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-h-[44px] min-w-[44px] sm:hidden"
+                    onClick={() => setShowActionMenu(!showActionMenu)}
+                    aria-expanded={showActionMenu}
+                    aria-haspopup="true"
+                    aria-label="More actions"
+                    title="More actions"
+                  >
+                    <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+                  </button>
+
+                  {showActionMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowActionMenu(false)}
+                        aria-hidden="true"
+                      />
+                      <div className="absolute right-0 top-full mt-2 z-50 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 animate-fade-in">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleClearAssignments();
+                            setShowActionMenu(false);
+                          }}
+                          disabled={assignments.length === 0}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        >
+                          <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                          Clear assignments
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowFinalizeModal(true);
+                            setShowActionMenu(false);
+                          }}
+                          disabled={assignments.length === 0}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+                        >
+                          <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                          Finalize rotation 🔒
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Clear button - visible on sm+ */}
+                <button
+                  type="button"
+                  onClick={handleClearAssignments}
+                  disabled={assignments.length === 0}
+                  className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white font-medium px-4 py-2.5 rounded-xl border border-white/20 transition-all text-xs disabled:opacity-40 min-h-[44px]"
+                  title="Clear all student assignments"
+                >
+                  <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                  Clear
                 </button>
               </div>
             </div>

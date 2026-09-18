@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { Navbar } from './components/Navbar';
 import { clearWorkspace } from './services/storage/indexedDb';
 import { Student, Role, Assignment } from './types';
 
@@ -155,6 +156,143 @@ describe('App Core Functionality', () => {
         const input = within(header).getByRole('textbox');
         expect(input).toHaveValue('Loaded From Storage');
       });
+    });
+  });
+
+  describe('Navbar Regression Coverage', () => {
+    it('renders one navigation landmark with five normal buttons and unique header actions', async () => {
+      render(<App />);
+      await screen.findByText('My Class');
+
+      const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
+      const labels = ['Matching Board', 'Students', 'Jobs & Slots', 'Poster', 'Rotations'];
+      expect(screen.getByRole('navigation')).toBe(navigation);
+      expect(within(navigation).queryAllByRole('button')).toHaveLength(5);
+      for (const label of labels) {
+        const button = screen.getByRole('button', { name: label, exact: true });
+        expect(navigation).toContainElement(button);
+        expect(button).toHaveAttribute('aria-label', label);
+        if (label === 'Matching Board') {
+          expect(button).toHaveAttribute('aria-current', 'page');
+        } else {
+          expect(button).not.toHaveAttribute('aria-current');
+        }
+      }
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Settings & Data' })).toHaveAttribute(
+        'title',
+        'Settings & Data'
+      );
+      expect(screen.getByRole('button', { name: 'Account & Sync' })).toBeInTheDocument();
+    });
+
+    it('toggles inline navigation without replacing navigation or header actions', async () => {
+      render(<App />);
+      await screen.findByText('My Class');
+
+      const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
+      const settings = screen.getByRole('button', { name: 'Settings & Data' });
+      const account = screen.getByRole('button', { name: 'Account & Sync' });
+      const toggle = screen.getByRole('button', { name: 'Open navigation menu' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle).toHaveAttribute('aria-controls', navigation.id);
+      expect(navigation.id).not.toBe('');
+
+      await userEvent.click(toggle);
+
+      expect(screen.getByRole('button', { name: 'Close navigation menu' })).toBe(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBe(navigation);
+      expect(screen.getByRole('banner')).toContainElement(navigation);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(document.body.style.overflow).not.toBe('hidden');
+      expect(screen.getByRole('button', { name: 'Settings & Data' })).toBe(settings);
+      expect(screen.getByRole('button', { name: 'Account & Sync' })).toBe(account);
+
+      await userEvent.click(toggle);
+
+      expect(screen.getByRole('button', { name: 'Open navigation menu' })).toBe(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBe(navigation);
+      expect(screen.getByRole('button', { name: 'Settings & Data' })).toBe(settings);
+      expect(screen.getByRole('button', { name: 'Account & Sync' })).toBe(account);
+    });
+
+    it('closes expanded navigation on selection and updates the current page', async () => {
+      render(<App />);
+      await screen.findByText('My Class');
+
+      const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
+      const labels = ['Students', 'Jobs & Slots', 'Poster', 'Rotations', 'Matching Board'];
+      let previous = screen.getByRole('button', { name: 'Matching Board' });
+      for (const label of labels) {
+        await userEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+        const selected = screen.getByRole('button', { name: label, exact: true });
+        await userEvent.click(selected);
+
+        expect(screen.getByRole('button', { name: 'Open navigation menu' })).toHaveAttribute(
+          'aria-expanded',
+          'false'
+        );
+        expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBe(navigation);
+        expect(selected).toHaveAttribute('aria-current', 'page');
+        expect(previous).not.toHaveAttribute('aria-current');
+        expect(navigation.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+        previous = selected;
+      }
+    });
+
+    it('exposes Settings as a disclosure and restores trigger focus on Escape', async () => {
+      render(<App />);
+      await screen.findByText('My Class');
+
+      const trigger = screen.getByRole('button', { name: 'Settings & Data' });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      await userEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(trigger).not.toHaveAttribute('aria-haspopup', 'menu');
+      expect(trigger).not.toHaveAttribute('aria-haspopup', 'true');
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
+      for (const name of [
+        'Export Class File (.json)',
+        'Import Class File (.json)',
+        'Copy Share / Sync Link',
+        'Save Now',
+        'Clear All Data (Reset)',
+      ]) {
+        expect(screen.getByRole('button', { name, exact: true })).toBeInTheDocument();
+      }
+
+      await userEvent.tab();
+      expect(screen.getByRole('button', { name: 'Export Class File (.json)' })).toHaveFocus();
+      await userEvent.keyboard('{Escape}');
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+      expect(
+        screen.queryByRole('button', { name: 'Export Class File (.json)' })
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Settings & Data' })).toBe(trigger);
+    });
+
+    it('closes Settings on outside click', async () => {
+      render(<App />);
+      await screen.findByText('My Class');
+
+      const trigger = screen.getByRole('button', { name: 'Settings & Data' });
+      await userEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('button', { name: 'Export Class File (.json)' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('heading', { name: 'Happy Roles' }));
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        screen.queryByRole('button', { name: 'Export Class File (.json)' })
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Settings & Data' })).toBe(trigger);
     });
   });
 
@@ -460,9 +598,7 @@ describe('App Core Functionality', () => {
         expect(screen.getByText(/Test Class/)).toBeInTheDocument();
       });
 
-      // Navigate to History tab (named "Rotations" in UI)
-      const historyTab = screen.getByRole('button', { name: 'Rotations' });
-      fireEvent.click(historyTab);
+      fireEvent.click(screen.getByRole('button', { name: 'Rotations' }));
 
       await waitFor(() => {
         expect(screen.getByText('August 2026 Jobs')).toBeInTheDocument();
@@ -479,9 +615,7 @@ describe('App Core Functionality', () => {
         expect(screen.getByText(/Test Class/)).toBeInTheDocument();
       });
 
-      // Navigate to History tab again
-      const historyTab2 = screen.getByRole('button', { name: 'Rotations' });
-      fireEvent.click(historyTab2);
+      fireEvent.click(screen.getByRole('button', { name: 'Rotations' }));
 
       // History should still be there
       await waitFor(() => {
@@ -489,6 +623,93 @@ describe('App Core Functionality', () => {
         expect(screen.getByText('First rotation')).toBeInTheDocument();
       });
     });
+  });
+});
+
+describe('Class Name Editing Regression Coverage', () => {
+  let activeUnmount: (() => void) | null = null;
+
+  const renderClassEditor = () => {
+    const onUpdateClassTitle = vi.fn();
+    const { unmount } = render(
+      <Navbar
+        activeTab="board"
+        onSelectTab={vi.fn()}
+        isSaving={false}
+        lastSavedAt={null}
+        onSaveToDisk={vi.fn()}
+        onExportJson={vi.fn()}
+        onImportJson={vi.fn()}
+        onCopyShareLink={vi.fn()}
+        onLoadDefaultRoles={vi.fn()}
+        onClearAllData={vi.fn()}
+        onUpdateClassTitle={onUpdateClassTitle}
+        classTitle="My Class"
+        hasRoles={false}
+        syncStatus="local"
+        onOpenAccountModal={vi.fn()}
+      />
+    );
+    if (activeUnmount) activeUnmount();
+    activeUnmount = unmount;
+    return {
+      onUpdateClassTitle,
+      unmount: () => {
+        activeUnmount = null;
+        unmount();
+      },
+    };
+  };
+
+  it('saves the class name exactly once on each trigger (blur, Enter, save button)', async () => {
+    for (const method of ['blur', 'Enter', 'save button'] as const) {
+      const { onUpdateClassTitle, unmount } = renderClassEditor();
+      const editButton = screen.getByRole('button', { name: 'My Class' });
+      expect(editButton).toHaveAttribute('title', 'Click to edit class name');
+      await userEvent.click(editButton);
+      const input = screen.getByRole('textbox', { name: 'Edit class name' });
+      expect(input).toHaveFocus();
+      expect(input).toHaveValue('My Class');
+      const saveButton = screen.getByRole('button', { name: 'Save class name' });
+      await userEvent.keyboard('{Backspace}');
+      await userEvent.type(input, '  New Class  ');
+      expect(onUpdateClassTitle).not.toHaveBeenCalled();
+
+      if (method === 'blur') {
+        await userEvent.click(screen.getByRole('heading', { name: 'Happy Roles' }));
+      } else if (method === 'Enter') {
+        await userEvent.keyboard('{Enter}');
+      } else {
+        await userEvent.click(saveButton);
+      }
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      });
+
+      expect(onUpdateClassTitle).toHaveBeenCalledExactlyOnceWith('New Class');
+      expect(screen.queryByRole('textbox', { name: 'Edit class name' })).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('does not save after Escape or subsequent blur and restores the original draft', async () => {
+    const { onUpdateClassTitle } = renderClassEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'My Class' }));
+    const input = screen.getByRole('textbox', { name: 'Edit class name' });
+    await userEvent.keyboard('{Backspace}');
+    await userEvent.type(input, 'Should Not Save');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('heading', { name: 'Happy Roles' }));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 150));
+    });
+
+    expect(onUpdateClassTitle).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox', { name: 'Edit class name' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'My Class' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'My Class' }));
+    expect(screen.getByRole('textbox', { name: 'Edit class name' })).toHaveValue('My Class');
+    expect(onUpdateClassTitle).not.toHaveBeenCalled();
   });
 });
 

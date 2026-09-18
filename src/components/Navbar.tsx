@@ -1,6 +1,8 @@
 import {
+  Backpack,
   Briefcase,
   Check,
+  ChevronDown,
   Cloud,
   CloudOff,
   Download,
@@ -9,6 +11,7 @@ import {
   History,
   Link,
   Loader2,
+  Menu,
   PlusCircle,
   Printer,
   Settings,
@@ -17,11 +20,11 @@ import {
   Upload,
   User,
   Users,
+  X,
 } from 'lucide-react';
 import React from 'react';
 
 export type ActiveTab = 'board' | 'students' | 'roles' | 'print' | 'history';
-
 export type SyncStatus = 'synced' | 'syncing' | 'local' | 'offline' | 'error';
 
 const SYNC_STATUS_LABELS: Record<SyncStatus, string> = {
@@ -40,15 +43,22 @@ const SYNC_STATUS_COLORS: Record<SyncStatus, string> = {
   error: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
-const SYNC_STATUS_ICONS: Record<SyncStatus, React.ReactNode> = {
-  synced: <Cloud className="w-3.5 h-3.5 text-emerald-600" />,
-  syncing: <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />,
-  local: <Cloud className="w-3.5 h-3.5 text-slate-500" />,
-  offline: <CloudOff className="w-3.5 h-3.5 text-amber-600" />,
-  error: <CloudOff className="w-3.5 h-3.5 text-rose-600" />,
+const SYNC_STATUS_ICONS = {
+  synced: Cloud,
+  syncing: Loader2,
+  local: HardDrive,
+  offline: CloudOff,
+  error: CloudOff,
 };
 
-// Inline editable class title component
+const TABS: { id: ActiveTab; label: string; icon: typeof Target }[] = [
+  { id: 'board', label: 'Matching Board', icon: Target },
+  { id: 'students', label: 'Students', icon: Users },
+  { id: 'roles', label: 'Jobs & Slots', icon: Briefcase },
+  { id: 'print', label: 'Poster', icon: Printer },
+  { id: 'history', label: 'Rotations', icon: History },
+];
+
 const EditableClassTitle: React.FC<{
   classTitle: string;
   onUpdate: (title: string) => void;
@@ -56,75 +66,82 @@ const EditableClassTitle: React.FC<{
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(classTitle);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const finishedRef = React.useRef(false);
+  const restoreFocusRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    } else if (restoreFocusRef.current) {
+      restoreFocusRef.current = false;
+      buttonRef.current?.focus();
     }
   }, [isEditing]);
 
-  React.useEffect(() => {
-    if (!isEditing) {
-      setEditValue(classTitle);
-    }
-  }, [classTitle, isEditing]);
-
-  const handleSave = () => {
+  const finishEditing = (save: boolean, restoreFocus: boolean) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    restoreFocusRef.current = restoreFocus;
     const trimmed = editValue.trim();
-    if (trimmed && trimmed !== classTitle) {
-      onUpdate(trimmed);
-    }
+    if (save && trimmed && trimmed !== classTitle) onUpdate(trimmed);
     setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      setEditValue(classTitle);
-      setIsEditing(false);
-    }
-  };
-
-  const handleBlur = () => {
-    setTimeout(handleSave, 100);
   };
 
   if (isEditing) {
     return (
-      <span className="flex items-center gap-1">
+      <span
+        className="flex min-w-0 w-full sm:w-64 items-center gap-2"
+        onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            finishEditing(true, false);
+          }
+        }}
+      >
         <input
           ref={inputRef}
           type="text"
           value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          className="bg-white text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-400 w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          onChange={event => setEditValue(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              finishEditing(event.key === 'Enter', true);
+            }
+          }}
+          className="min-w-0 w-full min-h-11 rounded-lg border border-blue-400 bg-white px-2 text-base text-slate-900"
           maxLength={30}
+          aria-label="Edit class name"
         />
         <button
           type="button"
-          onClick={handleSave}
-          className="p-0.5 text-blue-600 hover:text-blue-800"
-          title="Save"
+          onClick={() => finishEditing(true, true)}
+          className="flex w-11 shrink-0 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50"
+          aria-label="Save class name"
         >
-          <Check className="w-3.5 h-3.5" />
+          <Check className="w-4 h-4" aria-hidden="true" />
         </button>
       </span>
     );
   }
 
   return (
-    <span
-      className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 cursor-pointer hover:bg-blue-200 transition-colors flex items-center gap-1"
-      onClick={() => setIsEditing(true)}
+    <button
+      ref={buttonRef}
+      type="button"
+      className="flex min-w-0 max-w-full items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-sm font-semibold text-blue-800 hover:bg-blue-100"
+      onClick={() => {
+        finishedRef.current = false;
+        setEditValue(classTitle);
+        setIsEditing(true);
+      }}
       title="Click to edit class name"
     >
-      {classTitle || 'My Class'}
-      <Edit2 className="w-3 h-3 opacity-60 hover:opacity-100" />
-    </span>
+      <span className="min-w-0 [overflow-wrap:anywhere]">{classTitle || 'My Class'}</span>
+      <Edit2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+    </button>
   );
 };
 
@@ -166,299 +183,276 @@ export const Navbar: React.FC<NavbarProps> = ({
   userProfile,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
+  const navigationButtonRef = React.useRef<HTMLButtonElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [navigationOpen, setNavigationOpen] = React.useState(false);
+  const navigationId = React.useId();
+  const settingsId = React.useId();
+  const SyncIcon = SYNC_STATUS_ICONS[syncStatus];
+  const activeLabel = TABS.find(tab => tab.id === activeTab)?.label;
 
   React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
+    if (!settingsOpen) return;
+    const handleOutside = (event: MouseEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) setSettingsOpen(false);
     };
-    if (settingsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
   }, [settingsOpen]);
 
-  const triggerFileImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImportJson(file);
-      e.target.value = '';
-    }
+  const closeSettings = () => {
     setSettingsOpen(false);
+    settingsButtonRef.current?.focus();
   };
 
-  const handleDropdownAction = (action: () => void) => {
+  const handleAction = (action: () => void) => {
+    closeSettings();
     action();
-    setSettingsOpen(false);
   };
 
   const handleClearAllData = () => {
     if (
       window.confirm(
-        '⚠️ This will permanently delete ALL class data (roles, students, assignments) from this browser.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?'
+        'This will permanently delete ALL class data (roles, students, assignments) from this browser.\n\nThis cannot be undone. Export first if you want a backup.\n\nAre you sure?'
       )
     ) {
-      onClearAllData();
-      setSettingsOpen(false);
+      handleAction(onClearAllData);
     }
   };
 
+  const actionClass =
+    'flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50';
+
   return (
-    <header className="no-print bg-white border-b border-slate-200/90 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 flex-wrap gap-4">
-          {/* Logo & Title */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-sm">
-              🎒
+    <header
+      className="app-navbar no-print relative z-40 bg-white shadow-xs sm:sticky sm:top-0"
+      onKeyDown={event => {
+        if (event.key !== 'Escape') return;
+        if (settingsOpen) {
+          event.stopPropagation();
+          closeSettings();
+        } else if (navigationOpen) {
+          setNavigationOpen(false);
+          navigationButtonRef.current?.focus();
+        }
+      }}
+    >
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".json"
+        disabled={isSaving}
+        onChange={event => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) handleAction(() => onImportJson(file));
+        }}
+        className="hidden"
+        tabIndex={-1}
+      />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 sm:items-center">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden sm:flex w-10 h-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white">
+              <Backpack className="w-6 h-6" aria-hidden="true" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
-                  Happy Roles
-                </h1>
-                <EditableClassTitle classTitle={classTitle} onUpdate={onUpdateClassTitle} />
-              </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block">
-                Preference-maximizing matching with teacher adjustments
-              </p>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-lg font-extrabold tracking-tight text-slate-900">Happy Roles</h1>
+              <EditableClassTitle classTitle={classTitle} onUpdate={onUpdateClassTitle} />
             </div>
           </div>
-
-          {/* Navigation Tabs */}
-          <nav className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => onSelectTab('board')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'board'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Target className="w-3.5 h-3.5" />
-              <span>Matching Board</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('students')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'students'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Students</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('roles')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'roles'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>Jobs & Slots</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('print')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'print'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Poster</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('history')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'history'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <History className="w-3.5 h-3.5" />
-              <span>Rotations</span>
-            </button>
-          </nav>
-
-          {/* Right side: Sync status + Account + Settings */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Sync Status Pill */}
+          <div className="flex shrink-0 items-center gap-2">
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${SYNC_STATUS_COLORS[syncStatus]}`}
-              title={SYNC_STATUS_LABELS[syncStatus]}
+              className={`sr-only md:not-sr-only md:flex md:items-center md:gap-2 md:rounded-xl md:border md:px-3 md:py-2 md:text-xs ${SYNC_STATUS_COLORS[syncStatus]}`}
+              role="status"
+              aria-atomic="true"
             >
-              {SYNC_STATUS_ICONS[syncStatus]}
-              <span className="hidden sm:inline">{SYNC_STATUS_LABELS[syncStatus]}</span>
+              <SyncIcon
+                className={`w-4 h-4 shrink-0 ${syncStatus === 'syncing' ? 'motion-safe:animate-spin' : ''}`}
+                aria-hidden="true"
+              />
+              <span>{SYNC_STATUS_LABELS[syncStatus]}</span>
             </div>
-
-            {/* Load Default Roles Button (on Roles tab when empty) */}
-            {activeTab === 'roles' && !hasRoles && (
-              <button
-                type="button"
-                onClick={onLoadDefaultRoles}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-all text-xs"
-                title="Load common 4th-grade classroom jobs template"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Load Default Jobs</span>
-              </button>
-            )}
-
-            {/* Account Button */}
             <button
               type="button"
-              onClick={onOpenAccountModal}
-              className="flex items-center gap-1.5 p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl transition-all"
+              onClick={() => {
+                setSettingsOpen(false);
+                onOpenAccountModal();
+              }}
+              className="flex w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
               title="Account & Sync"
               aria-label="Account & Sync"
             >
               {userProfile ? (
                 <img
                   src={userProfile.picture}
-                  alt={userProfile.name}
+                  alt=""
+                  width={28}
+                  height={28}
                   className="w-7 h-7 rounded-full"
                 />
               ) : (
-                <User className="w-5 h-5 text-slate-500" />
+                <User className="w-5 h-5" aria-hidden="true" />
               )}
             </button>
-
-            {/* Settings Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div
+              className="relative"
+              ref={dropdownRef}
+              onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setSettingsOpen(false);
+                }
+              }}
+            >
               <button
+                ref={settingsButtonRef}
                 type="button"
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                onClick={() => {
+                  setSettingsOpen(open => !open);
+                  setNavigationOpen(false);
+                }}
+                className="flex min-w-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 title="Settings & Data"
+                aria-label="Settings & Data"
                 aria-expanded={settingsOpen}
-                aria-haspopup="true"
+                aria-controls={settingsId}
               >
-                <Settings className="w-3.5 h-3.5 text-slate-500" />
+                <Settings className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Settings</span>
-                <span
-                  className="inline-block transition-transform"
-                  style={{
-                    transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                >
-                  ▼
-                </span>
+                <ChevronDown className="hidden sm:block w-4 h-4" aria-hidden="true" />
               </button>
-
               {settingsOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50 animate-fade-in">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-900">Data & Sync</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Auto-saves to browser on every change
-                    </p>
+                <div
+                  id={settingsId}
+                  className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] max-h-[60dvh] overflow-y-auto rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+                >
+                  <div className="px-4 py-2 border-b border-slate-100 mb-1">
+                    <p className="text-sm font-semibold text-slate-900">Data & Sync</p>
+                    <p className="mt-1 text-xs text-slate-600">{SYNC_STATUS_LABELS[syncStatus]}</p>
                   </div>
-
                   <button
                     type="button"
-                    onClick={() => handleDropdownAction(onExportJson)}
+                    onClick={() => handleAction(onExportJson)}
                     disabled={isSaving}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className={actionClass}
                   >
-                    <Download className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <Download className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>Export Class File (.json)</span>
                   </button>
-
-                  <div className="relative">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept=".json"
-                      onChange={handleFileSelect}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <button
-                      type="button"
-                      onClick={triggerFileImport}
-                      disabled={isSaving}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                    >
-                      <Upload className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <span>Import Class File (.json)</span>
-                    </button>
-                  </div>
-
                   <button
                     type="button"
-                    onClick={() => handleDropdownAction(onCopyShareLink)}
+                    onClick={() => fileInputRef.current?.click()}
                     disabled={isSaving}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                    className={actionClass}
                   >
-                    <Link className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    <Upload className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>Import Class File (.json)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onCopyShareLink)}
+                    disabled={isSaving}
+                    className={actionClass}
+                  >
+                    <Link className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>Copy Share / Sync Link</span>
                   </button>
-
-                  <div className="border-t border-slate-100 my-1"></div>
-
                   <button
                     type="button"
-                    onClick={() => handleDropdownAction(onSaveToDisk)}
+                    onClick={() => handleAction(onSaveToDisk)}
                     disabled={isSaving}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className={actionClass}
                   >
-                    {isSaving ? (
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                    ) : (
-                      <HardDrive className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    )}
+                    <HardDrive className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>{isSaving ? 'Saving...' : 'Save Now'}</span>
                   </button>
-
-                  <div className="border-t border-slate-100 my-1"></div>
-
-                  <button
-                    type="button"
-                    onClick={handleClearAllData}
-                    disabled={isSaving}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                    <span>Clear All Data (Reset)</span>
-                  </button>
-
+                  <div className="mt-2 border-t border-slate-200 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleClearAllData}
+                      disabled={isSaving}
+                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      <span>Clear All Data (Reset)</span>
+                    </button>
+                  </div>
                   {lastSavedAt && (
-                    <div className="px-3 py-1.5 border-t border-slate-100">
-                      <p className="text-[11px] text-slate-400 text-center">
-                        Last saved{' '}
-                        {lastSavedAt.toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </p>
-                    </div>
+                    <p className="px-4 pt-2 text-xs text-slate-600">
+                      Last saved{' '}
+                      {lastSavedAt.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </p>
                   )}
                 </div>
               )}
             </div>
           </div>
         </div>
+        <button
+          ref={navigationButtonRef}
+          type="button"
+          onClick={() => {
+            setNavigationOpen(open => !open);
+            setSettingsOpen(false);
+          }}
+          className="flex sm:hidden w-full items-center justify-between gap-2 rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-700 mb-2"
+          aria-expanded={navigationOpen}
+          aria-controls={navigationId}
+          aria-label={navigationOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        >
+          <span>{activeLabel}</span>
+          {navigationOpen ? (
+            <X className="w-5 h-5" aria-hidden="true" />
+          ) : (
+            <Menu className="w-5 h-5" aria-hidden="true" />
+          )}
+        </button>
+        <nav
+          id={navigationId}
+          aria-label="Main navigation"
+          className={`${navigationOpen ? 'grid' : 'hidden'} sm:grid grid-cols-1 sm:grid-cols-5 gap-0 bg-white sm:border-none border-b border-slate-200`}
+        >
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              aria-label={label}
+              aria-current={activeTab === id ? 'page' : undefined}
+              onClick={() => {
+                onSelectTab(id);
+                if (navigationOpen) navigationButtonRef.current?.focus();
+                setNavigationOpen(false);
+              }}
+              className={`flex min-w-0 items-center justify-center gap-2 rounded-t-lg px-3 py-2.5 text-sm font-semibold transition-all relative ${
+                activeTab === id
+                  ? 'bg-white text-blue-700 sm:bg-slate-100 sm:before:absolute sm:before:top-0 sm:before:left-0 sm:before:right-0 sm:before:h-[calc(100%-2px)] sm:before:border-l-2 sm:before:border-r-2 sm:before:border-t-2 sm:before:border-blue-500 sm:before:rounded-t-lg'
+                  : 'bg-white text-slate-600 sm:after:absolute sm:after:bottom-[1px] sm:after:left-0 sm:after:right-0 sm:after:h-0.5 sm:after:bg-blue-500'
+              }`}
+            >
+              <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+        {activeTab === 'roles' && !hasRoles && (
+          <div className="border-t border-slate-100 py-2">
+            <button
+              type="button"
+              onClick={onLoadDefaultRoles}
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              title="Load common 4th-grade classroom jobs template"
+            >
+              <PlusCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Load Default Jobs</span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

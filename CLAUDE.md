@@ -40,7 +40,7 @@ The app is configured to listen on `0.0.0.0`. When running `npm run dev`, Vite p
 npm test
 ```
 
-The test suite covers **82 tests across 7 test files** (100% passing):
+The test suite covers **89 tests across 7 test files** (100% passing):
 
 - **Matcher engine** ([`src/engine/matcher.test.ts`](src/engine/matcher.test.ts) - 9 tests): Min-Cost Max-Flow algorithm correctness, preference scoring, adjustment weights, lock enforcement, standby pool, random tiebreaker for equal utilities, rotation history, anti-repetition penalty
 - **Google Auth & Session Persistence** ([`src/services/auth/googleAuth.test.ts`](src/services/auth/googleAuth.test.ts) - 6 tests): Storage state, session restoration on mount, profile preservation past token expiry, legacy format migration, clean sign-out, silent token refresh with email hint
@@ -97,25 +97,28 @@ The **% of Optimality** metric shows how close the current assignment is to the 
 
 ### 1. Matching Board ([`src/components/AssignmentBoard.tsx`](src/components/AssignmentBoard.tsx))
 
+- **Full-width responsive job grid**: 1 col on phone, 2 on tablet, 3 on desktop — no more fixed sidebar squeezing the board
+- **Sticky standby panel** (desktop) / inline flow (mobile): Standby Reserve positioned after jobs on all screens; no long hidden panel that pushes jobs out of view
 - **✨ Generate Optimal Matches**: Solves the assignment model with celebratory confetti.
 - **🔄 Flicker-Free Drag & Drop**:
   - Drag student onto another student to **swap** assignments.
   - Drag student onto dashed `➕ Drop student here` open slot to **assign**.
   - Drag student to the Standby Bank to **unassign**.
   - Drag student from Standby Bank into any job slot or onto another student to replace.
-- **🔒 Pinning & Locks**: Lock individual assignments so they remain untouched during recalculation/regeneration.
+- **⌨️ Accessible Move Menu (Touch/Keyboard)**: Per-student disclosure button opens a modal to Move to open job, Swap with student, or Move to standby — fully keyboard accessible with focus trap and Escape to close.
+- **🔒 Pinning & Locks**: Lock individual assignments so they remain untouched during recalculation/regeneration (min 44×44px touch targets).
 - **🧹 Clear Assignments**: Reset all assignments back to the Standby pool.
-- **🎒 Sticky Standby Sidebar**: Positioned on the right with an instant search filter so all cards and bins fit on a single screen without vertical scrolling.
 - **Uses shared hooks/components**: `useStudentHistory` for job history, `CompactPreferencePill` for preference display.
 
-### 2. Live Stats Sidebar ([`src/components/StatsSidebar.tsx`](src/components/StatsSidebar.tsx))
+### 2. Live Stats Strip ([`src/components/StatsSidebar.tsx`](src/components/StatsSidebar.tsx))
 
-- **Vertical metric cards** (1-column layout): Slots Filled → #1 Choice → Top 3 Choices → Avg Rank → % of Optimality → Score
+- **Compact horizontal metrics strip** (6 responsive cards): Slots Filled → #1 Choice → Top 3 Choices → Avg Rank → % of Optimality → Score
+- **Mobile-first grid**: 2 cols on phone, 3 on tablet, 6 on desktop
+- **Rank Distribution**: Single-row horizontal pills (e.g., "1st 12, 2nd 8, 3rd 5") with hidden horizontal scroll, always visible alongside cards
 - **% of Optimality**: Current raw utility score ÷ theoretical maximum (same rankings/scores, no locks/manual moves) — includes info tooltip explaining the metric
 - **Top 3 Choices**: Shows count and percentage of students assigned to their 1st, 2nd, or 3rd choice
 - **Raw Utility Score**: Subtle gray card (HelpCircle icon) with formula tooltip; same visual weight as other metrics (no longer monospace)
-- **Rank Distribution**: Single-row horizontal pills (e.g., "1st 12, 2nd 8, 3rd 5") with hidden horizontal scroll
-- **Built with shared components**: `MetricCard` (6 metric cards) and `RankPill` (rank distribution row)
+- **Built with shared components**: `MetricCard` (6 instances) and `RankPill` (rank distribution row)
 - Removed: "Satisfaction Index", "% with Top 2 Choices"
 
 ### 3. Student Roster & Preferences ([`src/components/StudentManager.tsx`](src/components/StudentManager.tsx))
@@ -229,8 +232,8 @@ src/
 │   └── matcher.test.ts            # Vitest unit test suite (7 tests)
 ├── components/
 │   ├── Navbar.tsx                 # Tab header, Settings dropdown, EditableClassTitle, Account button + sync status
-│   ├── StatsSidebar.tsx           # Vertical metrics, % optimality, rank pills (1-col)
-│   ├── AssignmentBoard.tsx        # Interactive board with drag & drop and sticky standby dock
+│   ├── StatsSidebar.tsx           # Horizontal metrics strip, % optimality, rank pills (responsive grid)
+│   ├── AssignmentBoard.tsx        # Full-width responsive board, drag & drop, accessible move menu, inline standby
 │   ├── StudentManager.tsx         # Student roster, top 5 choice ranking, letter score pills
 │   ├── RoleManager.tsx            # Job definitions, capacities, custom emoji input
 │   ├── PrintPoster.tsx            # Printable classroom poster and JSON exporter
